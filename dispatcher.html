@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ситуационный центр | Диспетчер</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Yandex Maps API -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=your_api_key&lang=ru_RU" type="text/javascript"></script>
+    <link rel="stylesheet" href="https://unpkg.com/lucide-static@latest/font/lucide.css">
+    <style>
+        body { overflow: hidden; } /* Prevent full page scroll */
+        .resizer {
+            width: 4px;
+            cursor: col-resize;
+            background-color: transparent;
+            transition: background-color 0.2s;
+            z-index: 20;
+        }
+        .resizer:hover, .resizer.resizing {
+            background-color: #3b82f6;
+        }
+        /* Map Container Fixes */
+        #map-container {
+            position: relative;
+            overflow: hidden; /* FIX BUG #2: Prevent map overflow */
+            height: 100%;
+            width: 100%;
+        }
+        /* Grid Auto-fit for cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            align-content: start;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border flex items-center justify-between px-6 shrink-0 z-30">
+        <div class="flex items-center gap-3">
+            <i class="lucide-radio text-blue-500 w-6 h-6"></i>
+            <span class="font-bold text-lg">Ситуационный центр</span>
+            <span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-2">DISPATCHER</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="lucide-sun w-5 h-5 hidden dark:block"></i>
+                <i class="lucide-moon w-5 h-5 block dark:hidden"></i>
+            </button>
+            <button id="logoutBtn" class="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                <i class="lucide-log-out w-4 h-4"></i> Выход
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Workspace (Split View) -->
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- LEFT: Map Area -->
+        <div id="left-panel" class="h-full relative bg-gray-200 dark:bg-gray-800">
+            <div id="map-container" class="w-full h-full"></div>
+            <!-- Overlay Info -->
+            <div class="absolute top-4 left-4 bg-white/90 dark:bg-dark-card/90 backdrop-blur p-3 rounded-lg shadow-lg z-10 max-w-xs pointer-events-none">
+                <h4 class="font-bold text-sm mb-1">Статус системы</h4>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span class="text-red-600 dark:text-red-400 font-bold">3 Критических инцидента</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resizer Handle -->
+        <div id="drag-handle" class="resizer absolute top-0 bottom-0 w-1 bg-gray-300 dark:bg-gray-700 z-20"></div>
+
+        <!-- RIGHT: Notifications Panel -->
+        <div id="right-panel" class="h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-dark-border flex flex-col min-w-[300px]" style="width: 40%;">
+            <div class="p-4 border-b border-gray-200 dark:border-dark-border flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                <h2 class="font-bold text-lg flex items-center gap-2">
+                    <i class="lucide-bell-ring w-5 h-5 text-orange-500"></i> Активные уведомления
+                </h2>
+                <span id="alertCount" class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
+            </div>
+            
+            <div id="alerts-container" class="flex-1 overflow-y-auto p-4 cards-grid">
+                <!-- Cards will be injected here via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Process Alert -->
+    <div id="processModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-200 dark:border-dark-border bg-red-50 dark:bg-red-900/10">
+                <h3 class="text-xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                    <i class="lucide-alert-triangle w-6 h-6"></i> Обработка инцидента
+                </h3>
+                <p id="modalLocation" class="text-sm text-gray-500 dark:text-gray-400 mt-1">Локация...</p>
+            </div>
+            
+            <div class="p-6 overflow-y-auto">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Выберите действие</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            <input type="radio" name="action" value="brigade" class="w-4 h-4 text-blue-600" checked>
+                            <span class="ml-3 text-sm font-medium">Вызов аварийно-спасательной службы</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            <input type="radio" name="action" value="specialist" class="w-4 h-4 text-blue-600">
+                            <span class="ml-3 text-sm font-medium">Направление специалиста для проверки</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            <input type="radio" name="action" value="monitor" class="w-4 h-4 text-blue-600">
+                            <span class="ml-3 text-sm font-medium">Продолжить мониторинг (повышенное внимание)</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            <input type="radio" name="action" value="false" class="w-4 h-4 text-blue-600">
+                            <span class="ml-3 text-sm font-medium">Ложное срабатывание / Ошибка датчика</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Комментарий диспетчера</label>
+                    <textarea id="commentInput" rows="3" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Укажите причину решения, номер бригады или дополнительные наблюдения..."></textarea>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">Отмена</button>
+                <button id="saveDecisionBtn" class="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition shadow-lg shadow-blue-500/30">Сохранить решение</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. AUTH & THEME CHECK ---
+        if (!localStorage.getItem('isLoggedIn') || localStorage.getItem('userRole') !== 'dispatcher') {
+            window.location.href = 'index.html';
+        }
+
+        const html = document.documentElement;
+        if (localStorage.getItem('theme') === 'light') html.classList.remove('dark');
+        else html.classList.add('dark');
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userRole');
+            window.location.href = 'index.html';
+        });
+
+        // --- 2. MOCK DATA ---
+        const alertsData = [
+            { id: 1, type: 'critical', title: 'Подтопление', sensor: 'Датчик уровня воды #402', location: 'Коллектор "Садовое кольцо", пикет 12+40', prob: '92%', forecast: '2ч', coords: [55.7412, 37.6012], status: 'new' },
+            { id: 2, type: 'critical', title: 'Задымление', sensor: 'Газоанализатор CH4', location: 'Вентшахта №8, ул. Тверская', prob: '88%', forecast: '1ч', coords: [55.7558, 37.6173], status: 'new' },
+            { id: 3, type: 'warning', title: 'Вскрытие люка', sensor: 'Контактный датчик СКУД', location: 'пр. Мира, у д. 45', prob: '75%', forecast: '-', coords: [55.7835, 37.6465], status: 'new' },
+            { id: 4, type: 'warning', title: 'Отказ датчика', sensor: 'Температурный сенсор T-12', location: 'Коллектор "Яуза", сектор 4', prob: '40%', forecast: '-', coords: [55.7965, 37.6890], status: 'new' },
+            { id: 5, type: 'normal', title: 'Плановые работы', sensor: 'Система видеонаблюдения', location: 'ул. Арбат, д. 10', prob: '0%', forecast: '-', coords: [55.7485, 37.5920], status: 'processed' }
+        ];
+
+        let myMap = null;
+        let currentAlertId = null;
+
+        // --- 3. INIT MAP (FIXED) ---
+        function initMap() {
+            // Wait for DOM and API
+            ymaps.ready(() => {
+                const mapContainer = document.getElementById('map-container');
+                
+                myMap = new ymaps.Map("map-container", {
+                    center: [55.751244, 37.618423],
+                    zoom: 12,
+                    controls: ['zoomControl', 'fullscreenControl']
+                }, {
+                    searchControlProvider: 'yandex#search'
+                });
+
+                // FIX BUG #1: Force viewport fit after init
+                myMap.container.fitToViewport();
+
+                renderMarkers();
+            });
+        }
+
+        function renderMarkers() {
+            if (!myMap) return;
+            myMap.geoObjects.removeAll();
+
+            alertsData.forEach(alert => {
+                if (alert.status === 'processed') return; // Hide processed
+
+                let color = 'green';
+                if (alert.type === 'critical') color = 'red';
+                if (alert.type === 'warning') color = 'orange';
+
+                const placemark = new ymaps.Placemark(alert.coords, {
+                    balloonContentHeader: `<strong>${alert.title}</strong>`,
+                    balloonContentBody: `
+                        <div class="text-sm">
+                            <p><b>Датчик:</b> ${alert.sensor}</p>
+                            <p><b>Вероятность:</b> ${alert.prob}</p>
+                            <button onclick="openModalFromMap(${alert.id})" style="margin-top:10px; background:#2563eb; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Обработать</button>
+                        </div>
+                    `,
+                    balloonContentFooter: alert.location
+                }, {
+                    preset: `islands#${color}DotIcon`
+                });
+
+                myMap.geoObjects.add(placemark);
+            });
+        }
+
+        // --- 4. RENDER CARDS ---
+        function renderCards() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            
+            const activeAlerts = alertsData.filter(a => a.status === 'new');
+            document.getElementById('alertCount').innerText = activeAlerts.length;
+
+            activeAlerts.forEach(alert => {
+                const isCritical = alert.type === 'critical';
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border-l-4 shadow-sm bg-white dark:bg-dark-card border-gray-200 dark:border-gray-700 ${isCritical ? 'border-l-red-500' : 'border-l-orange-500'} hover:shadow-md transition`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider ${isCritical ? 'text-red-500' : 'text-orange-500'}">${alert.title}</span>
+                        <span class="text-xs text-gray-400">${alert.forecast !== '-' ? 'Прогноз: ' + alert.forecast : ''}</span>
+                    </div>
+                    <h4 class="font-bold text-lg mb-1">${alert.location}</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+                        <i class="lucide-sensor w-3 h-3"></i> ${alert.sensor}
+                    </p>
+                    <div class="flex items-center justify-between mt-4">
+                        <div class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-600 dark:text-gray-300">
+                            Вероятность: <b>${alert.prob}</b>
+                        </div>
+                        <button onclick="openModal(${alert.id})" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                            Ответить <i class="lucide-chevron-right w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- 5. MODAL LOGIC ---
+        window.openModal = (id) => {
+            currentAlertId = id;
+            const alert = alertsData.find(a => a.id === id);
+            document.getElementById('modalLocation').innerText = alert.location;
+            document.getElementById('processModal').classList.remove('hidden');
+        };
+
+        window.openModalFromMap = (id) => {
+            openModal(id);
+        };
+
+        window.closeModal = () => {
+            document.getElementById('processModal').classList.add('hidden');
+            currentAlertId = null;
+        };
+
+        document.getElementById('saveDecisionBtn').addEventListener('click', () => {
+            if (!currentAlertId) return;
+            
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const comment = document.getElementById('commentInput').value;
+            
+            // Update Data
+            const alertIndex = alertsData.findIndex(a => a.id === currentAlertId);
+            if (alertIndex > -1) {
+                alertsData[alertIndex].status = 'processed';
+                // In real app, send to server here
+                console.log(`Saved: Action=${action}, Comment=${comment}`);
+            }
+
+            closeModal();
+            renderCards();
+            renderMarkers();
+            
+            // Show toast (simple alert for demo)
+            alert('Решение сохранено! Статус обновлен.');
+        });
+
+        // --- 6. RESIZABLE SPLIT PANEL LOGIC ---
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const resizer = document.getElementById('drag-handle');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            // Disable map interactions while resizing to prevent drag conflict
+            if(myMap) myMap.behaviors.disable('drag');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const containerWidth = document.body.clientWidth;
+            const newRightWidth = ((containerWidth - e.clientX) / containerWidth) * 100;
+            
+            // Constraints
+            if (newRightWidth > 15 && newRightWidth < 80) {
+                rightPanel.style.width = `${newRightWidth}%`;
+                // FIX BUG #2: Resize map container dynamically
+                if (myMap) myMap.container.fitToViewport();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = 'default';
+                if(myMap) myMap.behaviors.enable('drag');
+                // Final fit
+                if (myMap) myMap.container.fitToViewport();
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            initMap();
+            renderCards();
+        });
+
+    </script>
+</body>
+</html>
