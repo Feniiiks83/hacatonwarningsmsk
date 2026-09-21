@@ -3,62 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель Администратора | Управление</title>
+    <title>Панель Администратора | АО «Москоллектор»</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=your-api-key&lang=ru_RU" type="text/javascript"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        dark: {
-                            bg: '#0f172a',
+                        moscow: {
+                            blue: '#0066CC',
+                            dark: '#0f172a',
                             card: '#1e293b',
-                            border: '#334155'
+                            accent: '#00B4D8',
+                            purple: '#7C3AED'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.3s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
                         }
                     }
                 }
             }
         }
     </script>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=your_api_key&lang=ru_RU" type="text/javascript"></script>
-    <link rel="stylesheet" href="https://unpkg.com/lucide-static@latest/font/lucide.css">
     <style>
-        body { overflow: hidden; }
-        .resizer { width: 4px; cursor: col-resize; background-color: transparent; transition: background-color 0.2s; z-index: 20; }
-        .resizer:hover, .resizer.resizing { background-color: #3b82f6; }
-        #map-container { position: relative; overflow: hidden; height: 100%; width: 100%; }
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; align-content: start; }
-        .tab-btn.active { background-color: #1e293b; color: white; border-bottom: 2px solid #3b82f6; }
-        .dark .tab-btn.active { background-color: #334155; }
+        body { overflow: hidden; transition: background-color 0.3s ease, color 0.3s ease; }
+        
+        .resizer {
+            width: 5px;
+            cursor: col-resize;
+            background-color: transparent;
+            transition: background-color 0.2s;
+            z-index: 30;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+        .resizer:hover, .resizer.resizing {
+            background-color: #0066CC;
+        }
+        
+        #map-container {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            align-content: start;
+        }
+        
+        .icon-sun, .icon-moon { display: none; }
+        html.dark .icon-sun { display: block; }
+        html:not(.dark) .icon-moon { display: block; }
+        
+        .tab-btn.active {
+            background-color: #7C3AED;
+            color: white;
+            border-bottom: 2px solid #A78BFA;
+        }
+        .dark .tab-btn.active {
+            background-color: #1e293b;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 h-screen flex flex-col">
 
     <!-- Navbar -->
-    <nav class="h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border flex items-center justify-between px-6 shrink-0 z-30">
+    <nav class="h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 shrink-0 z-40 shadow-sm">
         <div class="flex items-center gap-3">
-            <i class="lucide-shield-check text-purple-500 w-6 h-6"></i>
-            <span class="font-bold text-lg">Панель Администратора</span>
+            <svg class="w-8 h-8 text-moscow-purple dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+            <div>
+                <span class="font-bold text-lg block leading-tight">Панель Администратора</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Управление системой и персоналом</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 ml-2 font-medium">ADMIN</span>
         </div>
-        <div class="flex items-center gap-4">
-            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                <i class="lucide-sun w-5 h-5 hidden dark:block"></i>
-                <i class="lucide-moon w-5 h-5 block dark:hidden"></i>
+        <div class="flex items-center gap-3">
+            <div class="hidden md:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mr-4">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+                <span id="currentTime">--:--:--</span>
+            </div>
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="Переключить тему">
+                <svg class="icon-sun w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+                <svg class="icon-moon w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
             </button>
             <button id="logoutBtn" class="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                <i class="lucide-log-out w-4 h-4"></i> Выход
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+                </svg>
+                Выход
             </button>
         </div>
     </nav>
 
-    <!-- Tabs -->
-    <div class="flex bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border px-6 shrink-0">
-        <button onclick="switchTab('monitoring')" id="tab-monitoring" class="tab-btn active px-6 py-4 font-medium text-sm border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-            <i class="lucide-monitor w-4 h-4 inline mr-2"></i> Мониторинг
+    <!-- Tabs Navigation -->
+    <div class="flex bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700 px-6 shrink-0 z-30">
+        <button onclick="switchTab('monitoring')" id="tab-monitoring" class="tab-btn active px-6 py-4 font-medium text-sm transition flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+            Ситуационный мониторинг
         </button>
-        <button onclick="switchTab('users')" id="tab-users" class="tab-btn px-6 py-4 font-medium text-sm text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-            <i class="lucide-users w-4 h-4 inline mr-2"></i> Управление доступом
+        <button onclick="switchTab('users')" id="tab-users" class="tab-btn px-6 py-4 font-medium text-sm text-gray-500 dark:text-gray-400 transition flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Управление пользователями
+        </button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-6 py-4 font-medium text-sm text-gray-500 dark:text-gray-400 transition flex items-center gap-2">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Системные настройки
         </button>
     </div>
 
@@ -67,50 +155,98 @@
         
         <!-- TAB 1: MONITORING (Same as Dispatcher) -->
         <div id="view-monitoring" class="absolute inset-0 flex">
-            <div id="left-panel" class="h-full relative bg-gray-200 dark:bg-gray-800">
+            <div id="left-panel" class="h-full relative bg-gray-200 dark:bg-gray-800" style="width: 60%;">
                 <div id="map-container" class="w-full h-full"></div>
+                
+                <!-- Map Overlay -->
+                <div class="absolute top-4 left-4 bg-white/95 dark:bg-dark-card/95 backdrop-blur p-4 rounded-xl shadow-xl z-10 max-w-xs border border-gray-200 dark:border-gray-700">
+                    <h4 class="font-bold text-sm mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                        </svg>
+                        Статус системы
+                    </h4>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span class="text-red-600 dark:text-red-400 font-bold"><span id="criticalCount">0</span> критических</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                            <span class="text-orange-600 dark:text-orange-400 font-bold"><span id="warningCount">0</span> предупреждений</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="drag-handle" class="resizer absolute top-0 bottom-0 w-1 bg-gray-300 dark:bg-gray-700 z-20"></div>
-            <div id="right-panel" class="h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-dark-border flex flex-col min-w-[300px]" style="width: 40%;">
-                <div class="p-4 border-b border-gray-200 dark:border-dark-border flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                    <h2 class="font-bold text-lg">Активные уведомления</h2>
-                    <span id="alertCount" class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
+            
+            <div id="drag-handle" class="resizer" style="left: 60%;"></div>
+            
+            <div id="right-panel" class="h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-gray-700 flex flex-col min-w-[320px]" style="width: 40%;">
+                <div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <button onclick="switchAlertTab('active')" id="alert-tab-active" class="tab-btn active flex-1 px-4 py-3 font-medium text-sm transition">
+                        Активные <span id="activeBadge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1">0</span>
+                    </button>
+                    <button onclick="switchAlertTab('resolved')" id="alert-tab-resolved" class="tab-btn flex-1 px-4 py-3 font-medium text-sm text-gray-500 dark:text-gray-400 transition">
+                        Завершенные <span id="resolvedBadge" class="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1">0</span>
+                    </button>
                 </div>
                 <div id="alerts-container" class="flex-1 overflow-y-auto p-4 cards-grid"></div>
+                <div id="empty-state" class="hidden flex-1 flex items-center justify-center p-8">
+                    <div class="text-center text-gray-400 dark:text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <p class="text-lg font-medium">Нет событий</p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- TAB 2: USER MANAGEMENT -->
         <div id="view-users" class="absolute inset-0 hidden bg-gray-50 dark:bg-dark-bg p-8 overflow-y-auto">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-2xl font-bold mb-6">Управление персоналом</h2>
+            <div class="max-w-6xl mx-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center gap-3">
+                        <svg class="w-7 h-7 text-moscow-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Управление персоналом
+                    </h2>
+                    <button onclick="showCreateUserModal()" class="bg-moscow-purple hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-purple-500/30">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                        Создать пользователя
+                    </button>
+                </div>
                 
-                <!-- Create User Form -->
-                <div class="bg-white dark:bg-dark-card p-6 rounded-xl shadow-sm border border-gray-200 dark:border-dark-border mb-8">
-                    <h3 class="text-lg font-semibold mb-4 text-blue-600 dark:text-blue-400">Создать нового диспетчера</h3>
-                    <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" id="newFullName" placeholder="ФИО" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent" required>
-                        <input type="text" id="newLogin" placeholder="Логин" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent" required>
-                        <input type="text" id="newPass" placeholder="Пароль" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent" required>
-                        <select id="newRole" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent">
-                            <option value="dispatcher">Диспетчер</option>
-                            <option value="operator">Оператор</option>
-                        </select>
-                        <button type="submit" class="md:col-span-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded font-medium transition">
-                            <i class="lucide-plus-circle w-4 h-4 inline mr-2"></i> Создать учетную запись
-                        </button>
-                    </form>
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white dark:bg-dark-card p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Всего пользователей</div>
+                        <div class="text-3xl font-bold" id="totalUsers">0</div>
+                    </div>
+                    <div class="bg-white dark:bg-dark-card p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Администраторы</div>
+                        <div class="text-3xl font-bold text-moscow-purple" id="adminCount">0</div>
+                    </div>
+                    <div class="bg-white dark:bg-dark-card p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">Диспетчеры</div>
+                        <div class="text-3xl font-bold text-blue-600" id="dispatcherCount">0</div>
+                    </div>
                 </div>
 
                 <!-- Users Table -->
-                <div class="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-200 dark:border-dark-border overflow-hidden">
+                <div class="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase">
                             <tr>
-                                <th class="p-4">ФИО</th>
-                                <th class="p-4">Логин</th>
-                                <th class="p-4">Роль</th>
-                                <th class="p-4 text-right">Действия</th>
+                                <th class="p-4 font-semibold">ФИО</th>
+                                <th class="p-4 font-semibold">Логин</th>
+                                <th class="p-4 font-semibold">Роль</th>
+                                <th class="p-4 font-semibold">Статус</th>
+                                <th class="p-4 font-semibold">Дата создания</th>
+                                <th class="p-4 font-semibold text-right">Действия</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -120,96 +256,317 @@
                 </div>
             </div>
         </div>
+
+        <!-- TAB 3: SETTINGS -->
+        <div id="view-settings" class="absolute inset-0 hidden bg-gray-50 dark:bg-dark-bg p-8 overflow-y-auto">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <svg class="w-7 h-7 text-gray-600 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    Системные настройки
+                </h2>
+                
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-dark-card p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold mb-4">Хранилище данных</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+                                <div>
+                                    <p class="font-medium">События в localStorage</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Ключ: ls_events</p>
+                                </div>
+                                <button onclick="clearEvents()" class="text-red-500 hover:text-red-600 text-sm font-medium">Очистить</button>
+                            </div>
+                            <div class="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+                                <div>
+                                    <p class="font-medium">Пользователи в localStorage</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Ключ: ls_users</p>
+                                </div>
+                                <button onclick="resetUsers()" class="text-red-500 hover:text-red-600 text-sm font-medium">Сбросить к умолчанию</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-dark-card p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold mb-4">Информация о системе</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Версия системы:</span>
+                                <span class="font-medium">2.0.0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Последнее обновление:</span>
+                                <span class="font-medium" id="lastUpdate">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Текущая тема:</span>
+                                <span class="font-medium" id="currentTheme">Dark</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Modal (Same as Dispatcher) -->
+    <!-- Modal: Process Alert -->
     <div id="processModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-dark-card w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-gray-200 dark:border-dark-border bg-red-50 dark:bg-red-900/10">
-                <h3 class="text-xl font-bold text-red-600 dark:text-red-400">Обработка инцидента</h3>
-                <p id="modalLocation" class="text-sm text-gray-500 dark:text-gray-400 mt-1"></p>
+        <div class="bg-white dark:bg-dark-card w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
+                <h3 class="text-xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Обработка инцидента
+                </h3>
+                <p id="modalLocation" class="text-sm text-gray-600 dark:text-gray-400 mt-2 pl-8">Локация...</p>
             </div>
             <div class="p-6 overflow-y-auto">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Действие</label>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold mb-3">Выберите действие</label>
                     <div class="space-y-2">
-                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="brigade" class="w-4 h-4 text-blue-600" checked>
-                            <span class="ml-3 text-sm">Вызов аварийной службы</span>
+                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="brigade" class="w-5 h-5 text-moscow-blue mt-0.5" checked>
+                            <div class="ml-3">
+                                <span class="block text-sm font-medium">Выезд аварийной бригады</span>
+                                <span class="block text-xs text-gray-500">Немедленное направление службы</span>
+                            </div>
                         </label>
-                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="specialist" class="w-4 h-4 text-blue-600">
-                            <span class="ml-3 text-sm">Направление специалиста</span>
+                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="specialist" class="w-5 h-5 text-moscow-blue mt-0.5">
+                            <div class="ml-3">
+                                <span class="block text-sm font-medium">Направление на проверку</span>
+                                <span class="block text-xs text-gray-500">Отправка специалиста для диагностики</span>
+                            </div>
                         </label>
-                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="false" class="w-4 h-4 text-blue-600">
-                            <span class="ml-3 text-sm">Ложное срабатывание</span>
+                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="monitor" class="w-5 h-5 text-moscow-blue mt-0.5">
+                            <div class="ml-3">
+                                <span class="block text-sm font-medium">Мониторинг</span>
+                                <span class="block text-xs text-gray-500">Продолжить наблюдение</span>
+                            </div>
+                        </label>
+                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="false_alarm" class="w-5 h-5 text-moscow-blue mt-0.5">
+                            <div class="ml-3">
+                                <span class="block text-sm font-medium">Ложное срабатывание</span>
+                                <span class="block text-xs text-gray-500">Техническая ошибка</span>
+                            </div>
                         </label>
                     </div>
                 </div>
-                <textarea id="commentInput" rows="3" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent outline-none" placeholder="Комментарий..."></textarea>
+                <textarea id="commentInput" rows="3" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-moscow-purple resize-none" placeholder="Комментарий диспетчера..."></textarea>
             </div>
-            <div class="p-4 border-t border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Отмена</button>
-                <button id="saveDecisionBtn" class="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium">Сохранить</button>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">Отмена</button>
+                <button id="saveDecisionBtn" class="px-6 py-2.5 rounded-lg bg-moscow-purple hover:bg-purple-700 text-white font-medium transition">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <svg class="w-6 h-6 text-moscow-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Новый пользователь
+                </h3>
+            </div>
+            <form id="createUserForm" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">ФИО</label>
+                    <input type="text" id="newFullName" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-moscow-purple outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Логин</label>
+                    <input type="text" id="newLogin" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-moscow-purple outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Пароль</label>
+                    <input type="password" id="newPass" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-moscow-purple outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Роль</label>
+                    <select id="newRole" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-moscow-purple outline-none">
+                        <option value="dispatcher">Диспетчер</option>
+                        <option value="admin">Администратор</option>
+                        <option value="operator">Оператор</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="hideCreateUserModal()" class="px-5 py-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">Отмена</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-lg bg-moscow-purple hover:bg-purple-700 text-white font-medium transition">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-white dark:bg-dark-card border-l-4 border-green-500 rounded-lg shadow-2xl p-4 z-[110] hidden animate-fade-in max-w-md">
+        <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-green-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <div>
+                <h4 class="font-bold text-gray-900 dark:text-gray-100">Успешно</h4>
+                <p id="toastMessage" class="text-sm text-gray-600 dark:text-gray-400 mt-1"></p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. AUTH & THEME ---
-        if (!localStorage.getItem('isLoggedIn') || localStorage.getItem('userRole') !== 'admin') {
+        // ============================================
+        // DATA STORE MODULE
+        // ============================================
+        const DataStore = {
+            KEYS: { USERS: 'ls_users', EVENTS: 'ls_events', SESSION: 'ls_session', THEME: 'ls_theme' },
+
+            init() {
+                if (!localStorage.getItem(this.KEYS.USERS)) {
+                    const defaultUsers = [
+                        { id: 1, fullName: 'Администратор Системы', login: 'admin', password: 'admin123', role: 'admin', active: true, createdAt: new Date().toISOString() },
+                        { id: 2, fullName: 'Петров Дмитрий Сергеевич', login: 'disp1', password: 'disp123', role: 'dispatcher', active: true, createdAt: new Date().toISOString() }
+                    ];
+                    localStorage.setItem(this.KEYS.USERS, JSON.stringify(defaultUsers));
+                }
+                if (!localStorage.getItem(this.KEYS.EVENTS)) {
+                    const defaultEvents = [
+                        { id: 1, type: 'flood', title: 'Подтопление коллектора', severity: 'critical', sensor: 'Датчик уровня воды LW-402', location: 'Коллектор "Садовое кольцо", пикет 12+40', coords: [55.7412, 37.6012], probability: 92, forecast: '2 часа', status: 'active', createdAt: new Date(Date.now() - 3600000).toISOString(), description: 'Зафиксировано критическое повышение уровня воды.' },
+                        { id: 2, type: 'fire', title: 'Задымление в коллекторе', severity: 'critical', sensor: 'Газоанализатор CH4-G2', location: 'Вентшахта №8, ул. Тверская', coords: [55.7558, 37.6173], probability: 88, forecast: '1 час', status: 'active', createdAt: new Date(Date.now() - 5400000).toISOString(), description: 'Обнаружена высокая концентрация метана.' },
+                        { id: 3, type: 'access', title: 'Несанкционированный доступ', severity: 'warning', sensor: 'Контактный датчик СКУД M-15', location: 'проспект Мира, у д. 45', coords: [55.7835, 37.6465], probability: 75, forecast: '-', status: 'active', createdAt: new Date(Date.now() - 7200000).toISOString(), description: 'Зафиксировано вскрытие люка без авторизации.' },
+                        { id: 4, type: 'sensor_fail', title: 'Отказ датчика температуры', severity: 'warning', sensor: 'Температурный сенсор T-12', location: 'Коллектор "Яуза", сектор 4', coords: [55.7965, 37.6890], probability: 40, forecast: '-', status: 'active', createdAt: new Date(Date.now() - 10800000).toISOString(), description: 'Датчик не передает данные более 3 часов.' },
+                        { id: 5, type: 'access', title: 'Ложное срабатывание СКУД', severity: 'normal', sensor: 'Контактный датчик СКУД M-08', location: 'ул. Арбат, д. 10', coords: [55.7485, 37.5920], probability: 15, forecast: '-', status: 'resolved', createdAt: new Date(Date.now() - 86400000).toISOString(), resolvedAt: new Date(Date.now() - 82800000).toISOString(), resolvedBy: 'admin', resolution: { action: 'false_alarm', comment: 'Техническая ошибка датчика.' }, description: 'Срабатывание датчика открытия люка.' }
+                    ];
+                    localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(defaultEvents));
+                }
+                if (!localStorage.getItem(this.KEYS.THEME)) localStorage.setItem(this.KEYS.THEME, 'dark');
+            },
+
+            getUsers() { return JSON.parse(localStorage.getItem(this.KEYS.USERS) || '[]'); },
+            getEvents() { return JSON.parse(localStorage.getItem(this.KEYS.EVENTS) || '[]'); },
+            
+            saveUser(user) {
+                const users = this.getUsers();
+                users.push(user);
+                localStorage.setItem(this.KEYS.USERS, JSON.stringify(users));
+            },
+
+            deleteUser(id) {
+                const users = this.getUsers().filter(u => u.id !== id);
+                localStorage.setItem(this.KEYS.USERS, JSON.stringify(users));
+            },
+
+            resolveEvent(eventId, userId, resolution) {
+                const events = this.getEvents();
+                const event = events.find(e => e.id === eventId);
+                if (event) {
+                    event.status = 'resolved';
+                    event.resolvedAt = new Date().toISOString();
+                    event.resolvedBy = userId;
+                    event.resolution = resolution;
+                    localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(events));
+                    return true;
+                }
+                return false;
+            },
+
+            getSession() { return JSON.parse(localStorage.getItem(this.KEYS.SESSION) || 'null'); },
+            logout() { localStorage.removeItem(this.KEYS.SESSION); },
+            getTheme() { return localStorage.getItem(this.KEYS.THEME) || 'dark'; },
+            setTheme(theme) { localStorage.setItem(this.KEYS.THEME, theme); },
+            clearEvents() { localStorage.removeItem(this.KEYS.EVENTS); },
+            resetUsersToDefault() {
+                const defaultUsers = [
+                    { id: 1, fullName: 'Администратор Системы', login: 'admin', password: 'admin123', role: 'admin', active: true, createdAt: new Date().toISOString() },
+                    { id: 2, fullName: 'Петров Дмитрий Сергеевич', login: 'disp1', password: 'disp123', role: 'dispatcher', active: true, createdAt: new Date().toISOString() }
+                ];
+                localStorage.setItem(this.KEYS.USERS, JSON.stringify(defaultUsers));
+            }
+        };
+
+        DataStore.init();
+
+        // ============================================
+        // AUTH CHECK
+        // ============================================
+        const session = DataStore.getSession();
+        if (!session || session.role !== 'admin') {
             window.location.href = 'index.html';
         }
 
+        // ============================================
+        // THEME & TIME
+        // ============================================
         const html = document.documentElement;
-        if (localStorage.getItem('theme') === 'light') html.classList.remove('dark');
-        else html.classList.add('dark');
+        applyTheme(DataStore.getTheme());
+
+        function applyTheme(theme) {
+            if (theme === 'light') html.classList.remove('dark');
+            else html.classList.add('dark');
+            document.getElementById('currentTheme').textContent = theme === 'light' ? 'Light' : 'Dark';
+        }
 
         document.getElementById('themeToggle').addEventListener('click', () => {
-            html.classList.toggle('dark');
-            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+            const newTheme = html.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            DataStore.setTheme(newTheme);
         });
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userRole');
+            DataStore.logout();
             window.location.href = 'index.html';
         });
 
-        // --- 2. TABS LOGIC ---
-        window.switchTab = (tabName) => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'text-white', 'bg-gray-800'));
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                if(!b.id.includes(tabName)) b.classList.add('text-gray-500');
-                else b.classList.remove('text-gray-500');
-            });
-            
-            document.getElementById(`tab-${tabName}`).classList.add('active');
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('ru-RU');
+            document.getElementById('lastUpdate').textContent = now.toLocaleString('ru-RU');
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
+        let myMap = null;
+        let currentAlertId = null;
+        let alertTab = 'active';
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
             
             document.getElementById('view-monitoring').classList.add('hidden');
             document.getElementById('view-users').classList.add('hidden');
-            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            document.getElementById('view-settings').classList.add('hidden');
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
 
-            // Fix map rendering if switching back to monitoring tab
-            if (tabName === 'monitoring' && myMap) {
+            if (tab === 'monitoring' && myMap) {
                 setTimeout(() => myMap.container.fitToViewport(), 100);
             }
         };
 
-        // --- 3. DATA & MAP (Same as Dispatcher) ---
-        const alertsData = [
-            { id: 1, type: 'critical', title: 'Подтопление', sensor: 'Датчик уровня воды #402', location: 'Коллектор "Садовое кольцо", пикет 12+40', prob: '92%', forecast: '2ч', coords: [55.7412, 37.6012], status: 'new' },
-            { id: 2, type: 'critical', title: 'Задымление', sensor: 'Газоанализатор CH4', location: 'Вентшахта №8, ул. Тверская', prob: '88%', forecast: '1ч', coords: [55.7558, 37.6173], status: 'new' },
-            { id: 3, type: 'warning', title: 'Вскрытие люка', sensor: 'Контактный датчик СКУД', location: 'пр. Мира, у д. 45', prob: '75%', forecast: '-', coords: [55.7835, 37.6465], status: 'new' }
-        ];
+        window.switchAlertTab = (tab) => {
+            alertTab = tab;
+            document.getElementById('alert-tab-active').classList.toggle('active', tab === 'active');
+            document.getElementById('alert-tab-resolved').classList.toggle('active', tab === 'resolved');
+            renderCards();
+        };
 
-        let myMap = null;
-        let currentAlertId = null;
-
+        // ============================================
+        // MAP INITIALIZATION
+        // ============================================
         function initMap() {
             ymaps.ready(() => {
-                myMap = new ymaps.Map("map-container", { center: [55.751244, 37.618423], zoom: 12 });
+                myMap = new ymaps.Map("map-container", {
+                    center: [55.751244, 37.618423],
+                    zoom: 11,
+                    controls: ['zoomControl', 'fullscreenControl']
+                });
                 myMap.container.fitToViewport();
                 renderMarkers();
             });
@@ -218,60 +575,191 @@
         function renderMarkers() {
             if (!myMap) return;
             myMap.geoObjects.removeAll();
-            alertsData.forEach(alert => {
-                if (alert.status === 'processed') return;
-                let color = alert.type === 'critical' ? 'red' : (alert.type === 'warning' ? 'orange' : 'green');
-                const placemark = new ymaps.Placemark(alert.coords, {
-                    balloonContentHeader: `<strong>${alert.title}</strong>`,
-                    balloonContentBody: `<button onclick="openModalFromMap(${alert.id})" style="margin-top:5px; background:#2563eb; color:white; border:none; padding:5px; border-radius:3px; cursor:pointer;">Обработать</button>`,
-                    balloonContentFooter: alert.location
+            const events = DataStore.getEvents();
+            events.forEach(event => {
+                if (event.status === 'resolved') return;
+                let color = event.severity === 'critical' ? 'red' : (event.severity === 'warning' ? 'orange' : 'green');
+                const placemark = new ymaps.Placemark(event.coords, {
+                    balloonContentHeader: `<strong>${event.title}</strong>`,
+                    balloonContentBody: `<p><strong>Датчик:</strong> ${event.sensor}</p><p><strong>Вероятность:</strong> ${event.probability}%</p><button onclick="openModalFromMap(${event.id})" style="margin-top:8px;background:#7C3AED;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Обработать</button>`,
+                    balloonContentFooter: event.location
                 }, { preset: `islands#${color}DotIcon` });
                 myMap.geoObjects.add(placemark);
             });
         }
 
+        // ============================================
+        // RENDER CARDS
+        // ============================================
         function renderCards() {
             const container = document.getElementById('alerts-container');
+            const emptyState = document.getElementById('empty-state');
             container.innerHTML = '';
-            const active = alertsData.filter(a => a.status === 'new');
-            document.getElementById('alertCount').innerText = active.length;
-            active.forEach(alert => {
-                const isCrit = alert.type === 'critical';
+            
+            const events = DataStore.getEvents();
+            const filtered = alertTab === 'active' ? events.filter(e => e.status === 'active') : events.filter(e => e.status === 'resolved');
+
+            const activeCount = events.filter(e => e.status === 'active').length;
+            const resolvedCount = events.filter(e => e.status === 'resolved').length;
+            document.getElementById('activeBadge').textContent = activeCount;
+            document.getElementById('resolvedBadge').textContent = resolvedCount;
+            document.getElementById('criticalCount').textContent = events.filter(e => e.status === 'active' && e.severity === 'critical').length;
+            document.getElementById('warningCount').textContent = events.filter(e => e.status === 'active' && e.severity === 'warning').length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                container.classList.add('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            filtered.forEach(event => {
+                const isCritical = event.severity === 'critical';
+                const borderColor = isCritical ? 'border-l-red-500' : 'border-l-orange-500';
                 const card = document.createElement('div');
-                card.className = `p-4 rounded-xl border-l-4 shadow-sm bg-white dark:bg-dark-card border-gray-200 dark:border-gray-700 ${isCrit ? 'border-l-red-500' : 'border-l-orange-500'}`;
+                card.className = `p-5 rounded-xl border-l-4 shadow-sm bg-white dark:bg-dark-card border-gray-200 dark:border-gray-700 ${borderColor} cursor-pointer hover:shadow-md`;
+                card.onclick = () => openModal(event.id);
                 card.innerHTML = `
-                    <div class="flex justify-between mb-2"><span class="text-xs font-bold uppercase ${isCrit ? 'text-red-500' : 'text-orange-500'}">${alert.title}</span></div>
-                    <h4 class="font-bold text-lg mb-1">${alert.location}</h4>
-                    <p class="text-sm text-gray-500 mb-3">${alert.sensor}</p>
-                    <button onclick="openModal(${alert.id})" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 rounded-lg">Ответить</button>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-xs font-bold uppercase ${isCritical ? 'text-red-500' : 'text-orange-500'}">${event.title}</span>
+                        <span class="text-xs text-gray-400">${event.status === 'resolved' ? 'Завершено' : event.forecast}</span>
+                    </div>
+                    <h4 class="font-bold text-lg mb-1">${event.location}</h4>
+                    <p class="text-sm text-gray-500 mb-3">${event.sensor}</p>
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <span class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Вероятность: <strong>${event.probability}%</strong></span>
+                        ${event.status === 'active' ? '<button class="text-moscow-purple text-sm font-medium">Ответить →</button>' : '<span class="text-xs text-green-500">✓ Обработано</span>'}
+                    </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        // Modal Functions
+        // ============================================
+        // MODAL LOGIC
+        // ============================================
         window.openModal = (id) => {
             currentAlertId = id;
-            document.getElementById('modalLocation').innerText = alertsData.find(a => a.id === id).location;
-            document.getElementById('processModal').classList.remove('hidden');
+            const event = DataStore.getEvents().find(e => e.id === id);
+            if (event) {
+                document.getElementById('modalLocation').textContent = `${event.title} — ${event.location}`;
+                document.getElementById('processModal').classList.remove('hidden');
+            }
         };
         window.openModalFromMap = (id) => openModal(id);
         window.closeModal = () => {
             document.getElementById('processModal').classList.add('hidden');
             currentAlertId = null;
+            document.getElementById('commentInput').value = '';
         };
+
         document.getElementById('saveDecisionBtn').addEventListener('click', () => {
-            const idx = alertsData.findIndex(a => a.id === currentAlertId);
-            if (idx > -1) {
-                alertsData[idx].status = 'processed';
+            if (!currentAlertId) return;
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const comment = document.getElementById('commentInput').value.trim();
+            const resolution = { action, comment };
+            if (DataStore.resolveEvent(currentAlertId, session.login, resolution)) {
+                closeModal();
                 renderCards();
                 renderMarkers();
-                closeModal();
-                alert('Решение сохранено');
+                showToast('Решение сохранено');
             }
         });
 
-        // Resize Logic
+        // ============================================
+        // USER MANAGEMENT
+        // ============================================
+        function renderUsers() {
+            const users = DataStore.getUsers();
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            
+            let adminCount = 0, dispatcherCount = 0;
+            
+            users.forEach(u => {
+                if (u.role === 'admin') adminCount++;
+                if (u.role === 'dispatcher') dispatcherCount++;
+                
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/50';
+                tr.innerHTML = `
+                    <td class="p-4 font-medium">${u.fullName}</td>
+                    <td class="p-4 text-gray-500"><code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm">${u.login}</code></td>
+                    <td class="p-4"><span class="px-2 py-1 rounded text-xs ${u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}">${u.role}</span></td>
+                    <td class="p-4"><span class="text-green-600 text-sm">● Активен</span></td>
+                    <td class="p-4 text-sm text-gray-500">${new Date(u.createdAt).toLocaleDateString('ru-RU')}</td>
+                    <td class="p-4 text-right">
+                        ${u.login !== 'admin' ? `<button onclick="deleteUser(${u.id})" class="text-red-500 hover:text-red-700 p-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : '<span class="text-gray-400 text-sm">—</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('adminCount').textContent = adminCount;
+            document.getElementById('dispatcherCount').textContent = dispatcherCount;
+        }
+
+        window.showCreateUserModal = () => document.getElementById('createUserModal').classList.remove('hidden');
+        window.hideCreateUserModal = () => document.getElementById('createUserModal').classList.add('hidden');
+
+        document.getElementById('createUserForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newUser = {
+                id: Date.now(),
+                fullName: document.getElementById('newFullName').value,
+                login: document.getElementById('newLogin').value,
+                password: document.getElementById('newPass').value,
+                role: document.getElementById('newRole').value,
+                active: true,
+                createdAt: new Date().toISOString()
+            };
+            DataStore.saveUser(newUser);
+            renderUsers();
+            hideCreateUserModal();
+            e.target.reset();
+            showToast('Пользователь создан');
+        });
+
+        window.deleteUser = (id) => {
+            if (confirm('Удалить этого пользователя?')) {
+                DataStore.deleteUser(id);
+                renderUsers();
+                showToast('Пользователь удален');
+            }
+        };
+
+        window.clearEvents = () => {
+            if (confirm('Очистить все события?')) {
+                DataStore.clearEvents();
+                renderCards();
+                renderMarkers();
+                showToast('События очищены');
+            }
+        };
+
+        window.resetUsers = () => {
+            if (confirm('Сбросить пользователей к значениям по умолчанию?')) {
+                DataStore.resetUsersToDefault();
+                renderUsers();
+                showToast('Пользователи сброшены');
+            }
+        };
+
+        // ============================================
+        // TOAST NOTIFICATION
+        // ============================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // ============================================
+        // RESIZABLE PANEL
+        // ============================================
         const leftPanel = document.getElementById('left-panel');
         const rightPanel = document.getElementById('right-panel');
         const resizer = document.getElementById('drag-handle');
@@ -280,77 +768,41 @@
         resizer.addEventListener('mousedown', (e) => {
             isResizing = true;
             resizer.classList.add('resizing');
-            if(myMap) myMap.behaviors.disable('drag');
+            if (myMap) myMap.behaviors.disable('drag');
+            e.preventDefault();
         });
+
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             const w = ((document.body.clientWidth - e.clientX) / document.body.clientWidth) * 100;
-            if (w > 15 && w < 80) {
+            if (w >= 20 && w <= 70) {
                 rightPanel.style.width = `${w}%`;
+                leftPanel.style.width = `${100 - w}%`;
+                resizer.style.left = `${100 - w}%`;
                 if (myMap) myMap.container.fitToViewport();
             }
         });
+
         document.addEventListener('mouseup', () => {
             if (isResizing) {
                 isResizing = false;
                 resizer.classList.remove('resizing');
-                if(myMap) myMap.behaviors.enable('drag');
+                if (myMap) myMap.behaviors.enable('drag');
                 if (myMap) myMap.container.fitToViewport();
             }
         });
 
-        // --- 4. ADMIN USERS LOGIC ---
-        let users = JSON.parse(localStorage.getItem('appUsers')) || [
-            { id: 1, name: 'Администратор', login: 'admin', role: 'admin' },
-            { id: 2, name: 'Иванов И.И.', login: 'disp1', role: 'dispatcher' }
-        ];
-
-        function renderUsers() {
-            const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = '';
-            users.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/50';
-                tr.innerHTML = `
-                    <td class="p-4 font-medium">${u.name}</td>
-                    <td class="p-4 text-gray-500">${u.login}</td>
-                    <td class="p-4"><span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">${u.role}</span></td>
-                    <td class="p-4 text-right">
-                        ${u.login !== 'admin' ? `<button onclick="deleteUser(${u.id})" class="text-red-500 hover:text-red-700"><i class="lucide-trash w-4 h-4"></i></button>` : '-'}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            localStorage.setItem('appUsers', JSON.stringify(users));
-        }
-
-        document.getElementById('createUserForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const newUser = {
-                id: Date.now(),
-                name: document.getElementById('newFullName').value,
-                login: document.getElementById('newLogin').value,
-                role: document.getElementById('newRole').value
-                // In real app, hash password. Here we store plain text for demo simplicity or skip it
-            };
-            users.push(newUser);
-            renderUsers();
-            e.target.reset();
-            alert('Пользователь создан');
-        });
-
-        window.deleteUser = (id) => {
-            if(confirm('Удалить пользователя?')) {
-                users = users.filter(u => u.id !== id);
-                renderUsers();
-            }
-        };
-
-        // Init
+        // ============================================
+        // INITIALIZATION
+        // ============================================
         window.addEventListener('load', () => {
             initMap();
             renderCards();
             renderUsers();
+        });
+
+        window.addEventListener('resize', () => {
+            if (myMap) myMap.container.fitToViewport();
         });
     </script>
 </body>
