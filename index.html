@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система мониторинга инженерных коллекторов</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Custom Dark Theme for Situation Center */
+        .situation-center {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        
+        .threat-card {
+            transition: all 0.3s ease;
+        }
+        
+        .threat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        #map {
+            height: calc(100vh - 64px);
+            width: 100%;
+        }
+        
+        .dashboard-map {
+            height: calc(100vh - 128px);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* Leaflet popup customization */
+        .leaflet-popup-content-wrapper {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .leaflet-popup-tip {
+            background: #1e293b;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-critical { background-color: #ef4444; }
+        .status-warning { background-color: #f59e0b; }
+        .status-normal { background-color: #22c55e; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="activity" class="h-8 w-8 text-blue-600"></i>
+                    <h1 class="text-xl font-bold text-gray-900">Мониторинг Коллекторов</h1>
+                </div>
+                
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#" onclick="showPage('landing')" class="text-gray-700 hover:text-blue-600 font-medium">Главная</a>
+                    <a href="#" onclick="showPage('public-map')" class="text-gray-700 hover:text-blue-600 font-medium">Карта</a>
+                </nav>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="auth-buttons">
+                        <button onclick="showLoginModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200 flex items-center space-x-2">
+                            <i data-lucide="log-in" class="h-4 w-4"></i>
+                            <span>Вход для диспетчеров</span>
+                        </button>
+                    </div>
+                    
+                    <div id="user-info" class="hidden flex items-center space-x-3">
+                        <span id="user-name" class="text-gray-700 font-medium"></span>
+                        <span id="user-role" class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"></span>
+                        <button onclick="logout()" class="text-gray-500 hover:text-red-600">
+                            <i data-lucide="log-out" class="h-5 w-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-16">
+        <!-- Landing Page -->
+        <div id="landing-page" class="page">
+            <div class="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-20">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">Предиктивная аналитика инженерных коллекторов</h2>
+                    <p class="text-xl md:text-2xl mb-8 opacity-90">Система мониторинга и прогнозирования угроз в реальном времени</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                            <div class="text-3xl font-bold mb-2">825 км</div>
+                            <div class="opacity-80">Протяженность коллекторов под мониторингом</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                            <div class="text-3xl font-bold mb-2">94%</div>
+                            <div class="opacity-80">Точность предиктивных моделей</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                            <div class="text-3xl font-bold mb-2">24 часа</div>
+                            <div class="opacity-80">Горизонт прогнозирования угроз</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h3 class="text-3xl font-bold text-gray-900 mb-6">Преимущества системы</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="check-circle" class="h-6 w-6 text-green-500 mt-1"></i>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Раннее обнаружение угроз</h4>
+                                    <p class="text-gray-600">Прогнозирование инцидентов за 24 часа до возникновения</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="check-circle" class="h-6 w-6 text-green-500 mt-1"></i>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Автоматический анализ данных</h4>
+                                    <p class="text-gray-600">Обработка показаний датчиков в реальном времени</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="check-circle" class="h-6 w-6 text-green-500 mt-1"></i>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Оптимизация ресурсов</h4>
+                                    <p class="text-gray-600">Эффективное распределение аварийных бригад</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-200 rounded-xl h-80 flex items-center justify-center">
+                        <div class="text-center text-gray-500">
+                            <i data-lucide="map" class="h-16 w-16 mx-auto mb-4"></i>
+                            <p>Интерактивная карта доступна после авторизации</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Public Map Page -->
+        <div id="public-map-page" class="page hidden">
+            <div class="bg-white shadow-md p-4">
+                <h2 class="text-2xl font-bold text-gray-900">Публичная карта мониторинга</h2>
+                <p class="text-gray-600">Общий обзор зон мониторинга инженерных коллекторов</p>
+            </div>
+            <div id="public-map" class="dashboard-map"></div>
+        </div>
+
+        <!-- Dispatcher Dashboard -->
+        <div id="dispatcher-dashboard" class="page hidden situation-center">
+            <div class="flex h-screen">
+                <!-- Map Section -->
+                <div class="flex-1 relative">
+                    <div id="dispatcher-map" class="h-full"></div>
+                </div>
+                
+                <!-- Threats Panel -->
+                <div class="w-96 bg-slate-800 border-l border-slate-700 overflow-y-auto">
+                    <div class="p-4 border-b border-slate-700">
+                        <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="alert-triangle" class="h-6 w-6 text-red-500"></i>
+                            <span>Активные угрозы</span>
+                        </h3>
+                        <p class="text-slate-400 text-sm mt-1" id="threats-count">Загрузка...</p>
+                    </div>
+                    
+                    <div id="threats-list" class="p-4 space-y-4">
+                        <!-- Threat cards will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" class="page hidden situation-center">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-white mb-2">Панель администратора</h2>
+                    <p class="text-slate-400">Управление доступом и персоналом</p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Create User Form -->
+                    <div class="bg-slate-800 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                            <i data-lucide="user-plus" class="h-6 w-6"></i>
+                            <span>Создание учетной записи</span>
+                        </h3>
+                        
+                        <form id="create-user-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">ФИО</label>
+                                <input type="text" id="new-user-fullname" required class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Логин</label>
+                                <input type="text" id="new-user-login" required class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Пароль</label>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="new-user-password" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                                    <button type="button" onclick="generatePassword()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white">
+                                        <i data-lucide="refresh-cw" class="h-5 w-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Роль</label>
+                                <select id="new-user-role" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                                    <option value="dispatcher">Диспетчер</option>
+                                    <option value="admin">Администратор</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Подразделение/Смена</label>
+                                <input type="text" id="new-user-department" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition duration-200">
+                                Создать учетную запись
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Users Table -->
+                    <div class="bg-slate-800 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+                            <i data-lucide="users" class="h-6 w-6"></i>
+                            <span>Существующие пользователи</span>
+                        </h3>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-slate-700">
+                                        <th class="pb-3 text-slate-300 font-medium">ФИО</th>
+                                        <th class="pb-3 text-slate-300 font-medium">Логин</th>
+                                        <th class="pb-3 text-slate-300 font-medium">Роль</th>
+                                        <th class="pb-3 text-slate-300 font-medium">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body" class="text-slate-300">
+                                    <!-- Users will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Вход в систему</h3>
+                <button onclick="closeLoginModal()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="h-6 w-6"></i>
+                </button>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Логин</label>
+                    <input type="text" id="login-username" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Пароль</label>
+                    <input type="password" id="login-password" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition duration-200">
+                    Войти
+                </button>
+            </form>
+            
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-600 font-medium mb-2">Тестовые учетные данные:</p>
+                <p class="text-xs text-gray-500">Админ: admin / admin123</p>
+                <p class="text-xs text-gray-500">Диспетчер: disp1 / disp123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signal Processing Modal -->
+    <div id="signal-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Обработка сигнала</h3>
+                <button onclick="closeSignalModal()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="h-6 w-6"></i>
+                </button>
+            </div>
+            
+            <form id="signal-form" class="space-y-4">
+                <input type="hidden" id="signal-threat-id">
+                
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-800">
+                        <strong>Тип угрозы:</strong> <span id="signal-threat-type"></span><br>
+                        <strong>Локация:</strong> <span id="signal-threat-location"></span><br>
+                        <strong>Вероятность:</strong> <span id="signal-threat-probability"></span>
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Действие</label>
+                    <select id="signal-action" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                        <option value="">Выберите действие</option>
+                        <option value="emergency_team">Выезд аварийной бригады</option>
+                        <option value="specialist_check">Направление специалиста на проверку</option>
+                        <option value="false_alarm">Ложное срабатывание</option>
+                        <option value="monitoring">Мониторинг</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Причина/Комментарий</label>
+                    <textarea id="signal-reason" rows="3" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition duration-200">
+                    Отправить
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // State Management
+        const state = {
+            currentUser: null,
+            threats: [
+                {
+                    id: 1,
+                    type: 'Подтопление',
+                    location: 'Коллектор "Центральный", пикет 12+50',
+                    lat: 55.751244,
+                    lng: 37.618423,
+                    probability: 87,
+                    horizon: '18 часов',
+                    status: 'critical',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    type: 'Задымление',
+                    location: 'Коллектор "Замоскворечье", пикет 8+30',
+                    lat: 55.734567,
+                    lng: 37.625678,
+                    probability: 92,
+                    horizon: '12 часов',
+                    status: 'critical',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    id: 3,
+                    type: 'Несанкционированный доступ',
+                    location: 'Коллектор "Пресня", пикет 15+20',
+                    lat: 55.758901,
+                    lng: 37.598765,
+                    probability: 78,
+                    horizon: '24 часа',
+                    status: 'warning',
+                    timestamp: new Date().toISOString()
+                }
+            ],
+            users: [
+                { id: 1, fullname: 'Администратор Системы', login: 'admin', password: 'admin123', role: 'admin', department: 'IT Отдел' },
+                { id: 2, fullname: 'Диспетчер Иванов', login: 'disp1', password: 'disp123', role: 'dispatcher', department: 'Смена №1' }
+            ]
+        };
+
+        // Maps instances
+        let publicMap = null;
+        let dispatcherMap = null;
+        let mapMarkers = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // Check for existing session
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                state.currentUser = JSON.parse(savedUser);
+                updateAuthUI();
+            }
+            
+            // Initialize Lucide icons
+            lucide.createIcons();
+            
+            // Show landing page by default
+            showPage('landing');
+        }
+
+        // Page Navigation
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Show requested page
+            const pageElement = document.getElementById(`${pageName}-page`) || 
+                               document.getElementById(`${pageName}-dashboard`) ||
+                               document.getElementById(`${pageName}-panel`);
+            
+            if (pageElement) {
+                pageElement.classList.remove('hidden');
+                
+                // Initialize maps when showing map pages
+                if (pageName === 'public-map') {
+                    setTimeout(() => initPublicMap(), 100);
+                } else if (pageName === 'dispatcher-dashboard') {
+                    setTimeout(() => initDispatcherMap(), 100);
+                    renderThreatsList();
+                } else if (pageName === 'admin-panel') {
+                    renderUsersTable();
+                }
+            }
+            
+            // Update body class for dark theme
+            if (pageName === 'dispatcher-dashboard' || pageName === 'admin-panel') {
+                document.body.classList.add('situation-center');
+                document.body.classList.remove('bg-gray-100');
+            } else {
+                document.body.classList.remove('situation-center');
+                document.body.classList.add('bg-gray-100');
+            }
+        }
+
+        // Authentication Functions
+        function showLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').classList.add('flex');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('login-modal').classList.remove('flex');
+        }
+
+        function login(username, password) {
+            const user = state.users.find(u => u.login === username && u.password === password);
+            
+            if (user) {
+                state.currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                updateAuthUI();
+                closeLoginModal();
+                
+                // Redirect based on role
+                if (user.role === 'admin') {
+                    showPage('admin-panel');
+                } else {
+                    showPage('dispatcher-dashboard');
+                }
+                
+                return true;
+            }
+            
+            return false;
+        }
+
+        function logout() {
+            state.currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateAuthUI();
+            showPage('landing');
+        }
+
+        function updateAuthUI() {
+            const authButtons = document.getElementById('auth-buttons');
+            const userInfo = document.getElementById('user-info');
+            
+            if (state.currentUser) {
+                authButtons.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                document.getElementById('user-name').textContent = state.currentUser.fullname;
+                document.getElementById('user-role').textContent = state.currentUser.role === 'admin' ? 'Администратор' : 'Диспетчер';
+            } else {
+                authButtons.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+            }
+        }
+
+        // Login Form Handler
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!login(username, password)) {
+                alert('Неверный логин или пароль');
+            }
+        });
+
+        // Map Initialization Functions
+        function initPublicMap() {
+            if (publicMap) return;
+            
+            publicMap = L.map('public-map').setView([55.751244, 37.618423], 11);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(publicMap);
+            
+            // Add some sample markers for public view
+            const sampleLocations = [
+                { lat: 55.751244, lng: 37.618423, title: 'Зона мониторинга: Центр' },
+                { lat: 55.734567, lng: 37.625678, title: 'Зона мониторинга: Замоскворечье' },
+                { lat: 55.758901, lng: 37.598765, title: 'Зона мониторинга: Пресня' }
+            ];
+            
+            sampleLocations.forEach(loc => {
+                L.marker([loc.lat, loc.lng])
+                    .addTo(publicMap)
+                    .bindPopup(`<b>${loc.title}</b><br>Общедоступная информация`);
+            });
+        }
+
+        function initDispatcherMap() {
+            if (dispatcherMap) {
+                // Clear existing markers
+                mapMarkers.forEach(marker => dispatcherMap.removeLayer(marker));
+                mapMarkers = [];
+                return;
+            }
+            
+            dispatcherMap = L.map('dispatcher-map').setView([55.751244, 37.618423], 12);
+            
+            // Dark theme tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(dispatcherMap);
+            
+            renderMapMarkers();
+        }
+
+        function renderMapMarkers() {
+            if (!dispatcherMap) return;
+            
+            // Clear existing markers
+            mapMarkers.forEach(marker => dispatcherMap.removeLayer(marker));
+            mapMarkers = [];
+            
+            state.threats.forEach(threat => {
+                const color = threat.status === 'critical' ? '#ef4444' : 
+                             threat.status === 'warning' ? '#f59e0b' : '#22c55e';
+                
+                const marker = L.circleMarker([threat.lat, threat.lng], {
+                    radius: 12,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(dispatcherMap);
+                
+                marker.bindPopup(`
+                    <div class="p-2">
+                        <h4 class="font-bold text-lg">${threat.type}</h4>
+                        <p class="text-sm"><strong>Локация:</strong> ${threat.location}</p>
+                        <p class="text-sm"><strong>Вероятность:</strong> ${threat.probability}%</p>
+                        <p class="text-sm"><strong>Статус:</strong> ${getStatusText(threat.status)}</p>
+                    </div>
+                `);
+                
+                mapMarkers.push(marker);
+            });
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'critical': return 'Критическая угроза';
+                case 'warning': return 'Предупреждение';
+                case 'normal': return 'Норма';
+                default: return status;
+            }
+        }
+
+        // Threats List Functions
+        function renderThreatsList() {
+            const threatsList = document.getElementById('threats-list');
+            const threatsCount = document.getElementById('threats-count');
+            
+            threatsCount.textContent = `Всего угроз: ${state.threats.length}`;
+            
+            threatsList.innerHTML = state.threats.map(threat => `
+                <div class="threat-card bg-slate-700 rounded-lg p-4 border-l-4 ${
+                    threat.status === 'critical' ? 'border-red-500' : 
+                    threat.status === 'warning' ? 'border-yellow-500' : 'border-green-500'
+                }">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-white font-semibold">${threat.type}</h4>
+                        <span class="status-indicator ${
+                            threat.status === 'critical' ? 'status-critical' : 
+                            threat.status === 'warning' ? 'status-warning' : 'status-normal'
+                        }"></span>
+                    </div>
+                    
+                    <p class="text-slate-300 text-sm mb-2">${threat.location}</p>
+                    
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs text-slate-400">Вероятность: ${threat.probability}%</span>
+                        <span class="text-xs text-slate-400">Горизонт: ${threat.horizon}</span>
+                    </div>
+                    
+                    <button onclick="openSignalModal(${threat.id})" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition duration-200">
+                        Обработать сигнал
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Signal Processing Modal Functions
+        function openSignalModal(threatId) {
+            const threat = state.threats.find(t => t.id === threatId);
+            if (!threat) return;
+            
+            document.getElementById('signal-threat-id').value = threat.id;
+            document.getElementById('signal-threat-type').textContent = threat.type;
+            document.getElementById('signal-threat-location').textContent = threat.location;
+            document.getElementById('signal-threat-probability').textContent = `${threat.probability}%`;
+            
+            document.getElementById('signal-modal').classList.remove('hidden');
+            document.getElementById('signal-modal').classList.add('flex');
+        }
+
+        function closeSignalModal() {
+            document.getElementById('signal-modal').classList.add('hidden');
+            document.getElementById('signal-modal').classList.remove('flex');
+            document.getElementById('signal-form').reset();
+        }
+
+        document.getElementById('signal-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const threatId = parseInt(document.getElementById('signal-threat-id').value);
+            const action = document.getElementById('signal-action').value;
+            const reason = document.getElementById('signal-reason').value;
+            
+            // Update threat status
+            const threatIndex = state.threats.findIndex(t => t.id === threatId);
+            if (threatIndex !== -1) {
+                state.threats[threatIndex].status = action === 'false_alarm' ? 'normal' : 
+                                                   action === 'emergency_team' ? 'critical' : 'warning';
+                state.threats[threatIndex].action = action;
+                state.threats[threatIndex].reason = reason;
+                
+                // Update UI
+                renderThreatsList();
+                renderMapMarkers();
+                closeSignalModal();
+                
+                alert('Сигнал успешно обработан!');
+            }
+        });
+
+        // Admin Panel Functions
+        function generatePassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('new-user-password').value = password;
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            
+            tbody.innerHTML = state.users.map(user => `
+                <tr class="border-b border-slate-700 hover:bg-slate-700/50">
+                    <td class="py-3">${user.fullname}</td>
+                    <td class="py-3">${user.login}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                        }">
+                            ${user.role === 'admin' ? 'Администратор' : 'Диспетчер'}
+                        </span>
+                    </td>
+                    <td class="py-3">
+                        ${user.login !== 'admin' ? `
+                        <button onclick="deleteUser(${user.id})" class="text-red-500 hover:text-red-700">
+                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        </button>
+                        ` : '<span class="text-slate-500 text-xs">Нельзя удалить</span>'}
+                    </td>
+                </tr>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                state.users = state.users.filter(u => u.id !== userId);
+                renderUsersTable();
+            }
+        }
+
+        document.getElementById('create-user-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newUser = {
+                id: Date.now(),
+                fullname: document.getElementById('new-user-fullname').value,
+                login: document.getElementById('new-user-login').value,
+                password: document.getElementById('new-user-password').value,
+                role: document.getElementById('new-user-role').value,
+                department: document.getElementById('new-user-department').value
+            };
+            
+            state.users.push(newUser);
+            renderUsersTable();
+            document.getElementById('create-user-form').reset();
+            
+            alert('Пользователь успешно создан!');
+        });
+
+        // Handle page visibility for map resizing
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                setTimeout(() => {
+                    if (publicMap) publicMap.invalidateSize();
+                    if (dispatcherMap) dispatcherMap.invalidateSize();
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
