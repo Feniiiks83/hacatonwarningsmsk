@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель Администратора | Управление</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=your_api_key&lang=ru_RU" type="text/javascript"></script>
+    <link rel="stylesheet" href="https://unpkg.com/lucide-static@latest/font/lucide.css">
+    <style>
+        body { overflow: hidden; }
+        .resizer { width: 4px; cursor: col-resize; background-color: transparent; transition: background-color 0.2s; z-index: 20; }
+        .resizer:hover, .resizer.resizing { background-color: #3b82f6; }
+        #map-container { position: relative; overflow: hidden; height: 100%; width: 100%; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; align-content: start; }
+        .tab-btn.active { background-color: #1e293b; color: white; border-bottom: 2px solid #3b82f6; }
+        .dark .tab-btn.active { background-color: #334155; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border flex items-center justify-between px-6 shrink-0 z-30">
+        <div class="flex items-center gap-3">
+            <i class="lucide-shield-check text-purple-500 w-6 h-6"></i>
+            <span class="font-bold text-lg">Панель Администратора</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="lucide-sun w-5 h-5 hidden dark:block"></i>
+                <i class="lucide-moon w-5 h-5 block dark:hidden"></i>
+            </button>
+            <button id="logoutBtn" class="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                <i class="lucide-log-out w-4 h-4"></i> Выход
+            </button>
+        </div>
+    </nav>
+
+    <!-- Tabs -->
+    <div class="flex bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border px-6 shrink-0">
+        <button onclick="switchTab('monitoring')" id="tab-monitoring" class="tab-btn active px-6 py-4 font-medium text-sm border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <i class="lucide-monitor w-4 h-4 inline mr-2"></i> Мониторинг
+        </button>
+        <button onclick="switchTab('users')" id="tab-users" class="tab-btn px-6 py-4 font-medium text-sm text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <i class="lucide-users w-4 h-4 inline mr-2"></i> Управление доступом
+        </button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-hidden relative">
+        
+        <!-- TAB 1: MONITORING (Same as Dispatcher) -->
+        <div id="view-monitoring" class="absolute inset-0 flex">
+            <div id="left-panel" class="h-full relative bg-gray-200 dark:bg-gray-800">
+                <div id="map-container" class="w-full h-full"></div>
+            </div>
+            <div id="drag-handle" class="resizer absolute top-0 bottom-0 w-1 bg-gray-300 dark:bg-gray-700 z-20"></div>
+            <div id="right-panel" class="h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-dark-border flex flex-col min-w-[300px]" style="width: 40%;">
+                <div class="p-4 border-b border-gray-200 dark:border-dark-border flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                    <h2 class="font-bold text-lg">Активные уведомления</h2>
+                    <span id="alertCount" class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
+                </div>
+                <div id="alerts-container" class="flex-1 overflow-y-auto p-4 cards-grid"></div>
+            </div>
+        </div>
+
+        <!-- TAB 2: USER MANAGEMENT -->
+        <div id="view-users" class="absolute inset-0 hidden bg-gray-50 dark:bg-dark-bg p-8 overflow-y-auto">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold mb-6">Управление персоналом</h2>
+                
+                <!-- Create User Form -->
+                <div class="bg-white dark:bg-dark-card p-6 rounded-xl shadow-sm border border-gray-200 dark:border-dark-border mb-8">
+                    <h3 class="text-lg font-semibold mb-4 text-blue-600 dark:text-blue-400">Создать нового диспетчера</h3>
+                    <form id="createUserForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="newFullName" placeholder="ФИО" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent" required>
+                        <input type="text" id="newLogin" placeholder="Логин" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent" required>
+                        <input type="text" id="newPass" placeholder="Пароль" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent" required>
+                        <select id="newRole" class="p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent">
+                            <option value="dispatcher">Диспетчер</option>
+                            <option value="operator">Оператор</option>
+                        </select>
+                        <button type="submit" class="md:col-span-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded font-medium transition">
+                            <i class="lucide-plus-circle w-4 h-4 inline mr-2"></i> Создать учетную запись
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Users Table -->
+                <div class="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-200 dark:border-dark-border overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase">
+                            <tr>
+                                <th class="p-4">ФИО</th>
+                                <th class="p-4">Логин</th>
+                                <th class="p-4">Роль</th>
+                                <th class="p-4 text-right">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal (Same as Dispatcher) -->
+    <div id="processModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-200 dark:border-dark-border bg-red-50 dark:bg-red-900/10">
+                <h3 class="text-xl font-bold text-red-600 dark:text-red-400">Обработка инцидента</h3>
+                <p id="modalLocation" class="text-sm text-gray-500 dark:text-gray-400 mt-1"></p>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Действие</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="brigade" class="w-4 h-4 text-blue-600" checked>
+                            <span class="ml-3 text-sm">Вызов аварийной службы</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="specialist" class="w-4 h-4 text-blue-600">
+                            <span class="ml-3 text-sm">Направление специалиста</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <input type="radio" name="action" value="false" class="w-4 h-4 text-blue-600">
+                            <span class="ml-3 text-sm">Ложное срабатывание</span>
+                        </label>
+                    </div>
+                </div>
+                <textarea id="commentInput" rows="3" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent outline-none" placeholder="Комментарий..."></textarea>
+            </div>
+            <div class="p-4 border-t border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Отмена</button>
+                <button id="saveDecisionBtn" class="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. AUTH & THEME ---
+        if (!localStorage.getItem('isLoggedIn') || localStorage.getItem('userRole') !== 'admin') {
+            window.location.href = 'index.html';
+        }
+
+        const html = document.documentElement;
+        if (localStorage.getItem('theme') === 'light') html.classList.remove('dark');
+        else html.classList.add('dark');
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userRole');
+            window.location.href = 'index.html';
+        });
+
+        // --- 2. TABS LOGIC ---
+        window.switchTab = (tabName) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'text-white', 'bg-gray-800'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                if(!b.id.includes(tabName)) b.classList.add('text-gray-500');
+                else b.classList.remove('text-gray-500');
+            });
+            
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            document.getElementById('view-monitoring').classList.add('hidden');
+            document.getElementById('view-users').classList.add('hidden');
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+
+            // Fix map rendering if switching back to monitoring tab
+            if (tabName === 'monitoring' && myMap) {
+                setTimeout(() => myMap.container.fitToViewport(), 100);
+            }
+        };
+
+        // --- 3. DATA & MAP (Same as Dispatcher) ---
+        const alertsData = [
+            { id: 1, type: 'critical', title: 'Подтопление', sensor: 'Датчик уровня воды #402', location: 'Коллектор "Садовое кольцо", пикет 12+40', prob: '92%', forecast: '2ч', coords: [55.7412, 37.6012], status: 'new' },
+            { id: 2, type: 'critical', title: 'Задымление', sensor: 'Газоанализатор CH4', location: 'Вентшахта №8, ул. Тверская', prob: '88%', forecast: '1ч', coords: [55.7558, 37.6173], status: 'new' },
+            { id: 3, type: 'warning', title: 'Вскрытие люка', sensor: 'Контактный датчик СКУД', location: 'пр. Мира, у д. 45', prob: '75%', forecast: '-', coords: [55.7835, 37.6465], status: 'new' }
+        ];
+
+        let myMap = null;
+        let currentAlertId = null;
+
+        function initMap() {
+            ymaps.ready(() => {
+                myMap = new ymaps.Map("map-container", { center: [55.751244, 37.618423], zoom: 12 });
+                myMap.container.fitToViewport();
+                renderMarkers();
+            });
+        }
+
+        function renderMarkers() {
+            if (!myMap) return;
+            myMap.geoObjects.removeAll();
+            alertsData.forEach(alert => {
+                if (alert.status === 'processed') return;
+                let color = alert.type === 'critical' ? 'red' : (alert.type === 'warning' ? 'orange' : 'green');
+                const placemark = new ymaps.Placemark(alert.coords, {
+                    balloonContentHeader: `<strong>${alert.title}</strong>`,
+                    balloonContentBody: `<button onclick="openModalFromMap(${alert.id})" style="margin-top:5px; background:#2563eb; color:white; border:none; padding:5px; border-radius:3px; cursor:pointer;">Обработать</button>`,
+                    balloonContentFooter: alert.location
+                }, { preset: `islands#${color}DotIcon` });
+                myMap.geoObjects.add(placemark);
+            });
+        }
+
+        function renderCards() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            const active = alertsData.filter(a => a.status === 'new');
+            document.getElementById('alertCount').innerText = active.length;
+            active.forEach(alert => {
+                const isCrit = alert.type === 'critical';
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border-l-4 shadow-sm bg-white dark:bg-dark-card border-gray-200 dark:border-gray-700 ${isCrit ? 'border-l-red-500' : 'border-l-orange-500'}`;
+                card.innerHTML = `
+                    <div class="flex justify-between mb-2"><span class="text-xs font-bold uppercase ${isCrit ? 'text-red-500' : 'text-orange-500'}">${alert.title}</span></div>
+                    <h4 class="font-bold text-lg mb-1">${alert.location}</h4>
+                    <p class="text-sm text-gray-500 mb-3">${alert.sensor}</p>
+                    <button onclick="openModal(${alert.id})" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 rounded-lg">Ответить</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Modal Functions
+        window.openModal = (id) => {
+            currentAlertId = id;
+            document.getElementById('modalLocation').innerText = alertsData.find(a => a.id === id).location;
+            document.getElementById('processModal').classList.remove('hidden');
+        };
+        window.openModalFromMap = (id) => openModal(id);
+        window.closeModal = () => {
+            document.getElementById('processModal').classList.add('hidden');
+            currentAlertId = null;
+        };
+        document.getElementById('saveDecisionBtn').addEventListener('click', () => {
+            const idx = alertsData.findIndex(a => a.id === currentAlertId);
+            if (idx > -1) {
+                alertsData[idx].status = 'processed';
+                renderCards();
+                renderMarkers();
+                closeModal();
+                alert('Решение сохранено');
+            }
+        });
+
+        // Resize Logic
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const resizer = document.getElementById('drag-handle');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizer.classList.add('resizing');
+            if(myMap) myMap.behaviors.disable('drag');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const w = ((document.body.clientWidth - e.clientX) / document.body.clientWidth) * 100;
+            if (w > 15 && w < 80) {
+                rightPanel.style.width = `${w}%`;
+                if (myMap) myMap.container.fitToViewport();
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizer.classList.remove('resizing');
+                if(myMap) myMap.behaviors.enable('drag');
+                if (myMap) myMap.container.fitToViewport();
+            }
+        });
+
+        // --- 4. ADMIN USERS LOGIC ---
+        let users = JSON.parse(localStorage.getItem('appUsers')) || [
+            { id: 1, name: 'Администратор', login: 'admin', role: 'admin' },
+            { id: 2, name: 'Иванов И.И.', login: 'disp1', role: 'dispatcher' }
+        ];
+
+        function renderUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/50';
+                tr.innerHTML = `
+                    <td class="p-4 font-medium">${u.name}</td>
+                    <td class="p-4 text-gray-500">${u.login}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">${u.role}</span></td>
+                    <td class="p-4 text-right">
+                        ${u.login !== 'admin' ? `<button onclick="deleteUser(${u.id})" class="text-red-500 hover:text-red-700"><i class="lucide-trash w-4 h-4"></i></button>` : '-'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            localStorage.setItem('appUsers', JSON.stringify(users));
+        }
+
+        document.getElementById('createUserForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newUser = {
+                id: Date.now(),
+                name: document.getElementById('newFullName').value,
+                login: document.getElementById('newLogin').value,
+                role: document.getElementById('newRole').value
+                // In real app, hash password. Here we store plain text for demo simplicity or skip it
+            };
+            users.push(newUser);
+            renderUsers();
+            e.target.reset();
+            alert('Пользователь создан');
+        });
+
+        window.deleteUser = (id) => {
+            if(confirm('Удалить пользователя?')) {
+                users = users.filter(u => u.id !== id);
+                renderUsers();
+            }
+        };
+
+        // Init
+        window.addEventListener('load', () => {
+            initMap();
+            renderCards();
+            renderUsers();
+        });
+    </script>
+</body>
+</html>
