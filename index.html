@@ -11,6 +11,8 @@
             theme: {
                 extend: {
                     colors: {
+                        'dark-bg': '#0f172a',
+                        'dark-card': '#1e293b',
                         moscow: {
                             blue: '#0066CC',
                             dark: '#0f172a',
@@ -48,7 +50,6 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 40px rgba(0, 102, 204, 0.15);
         }
-        /* SVG Icons inline */
         .icon-sun, .icon-moon { display: none; }
         html.dark .icon-sun { display: block; }
         html:not(.dark) .icon-moon { display: block; }
@@ -69,28 +70,27 @@
         </div>
         <div class="flex items-center gap-4">
             <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" aria-label="Переключить тему">
-                <!-- Sun Icon -->
                 <svg class="icon-sun w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="5"/>
                     <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
                 </svg>
-                <!-- Moon Icon -->
                 <svg class="icon-moon w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                 </svg>
             </button>
-            <button onclick="document.getElementById('loginModal').classList.remove('hidden')" class="bg-moscow-blue hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-blue-500/30">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
-                </svg>
-                Вход в систему
-            </button>
+            <div id="authHeaderBtn">
+                <button onclick="openLoginModal()" class="bg-moscow-blue hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-blue-500/30">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+                    </svg>
+                    Вход в систему
+                </button>
+            </div>
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="flex-grow container mx-auto px-4 py-8">
-        <!-- Hero Section -->
         <div class="text-center mb-12 max-w-4xl mx-auto">
             <h2 class="text-4xl md:text-5xl font-extrabold mb-4 gradient-text">
                 Интеллектуальный мониторинг<br/>подземных коллекторов Москвы
@@ -184,7 +184,7 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <p class="text-2xl font-bold">4</p>
+                    <p class="text-2xl font-bold" id="activeEventsBannerCount">4</p>
                     <p class="text-sm text-blue-100">Активных события</p>
                 </div>
             </div>
@@ -197,9 +197,9 @@
     </footer>
 
     <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4" role="dialog" aria-modal="true">
-        <div class="bg-white dark:bg-dark-card w-full max-w-md rounded-2xl shadow-2xl p-8 relative animate-fade-in">
-            <button onclick="document.getElementById('loginModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition" aria-label="Закрыть">
+    <div id="loginModal" onclick="handleModalBackdropClick(event)" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-white dark:bg-dark-card w-full max-w-md rounded-2xl shadow-2xl p-8 relative animate-fade-in" onclick="event.stopPropagation()">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition" aria-label="Закрыть">
                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
@@ -252,9 +252,6 @@
     </div>
 
     <script>
-        // ============================================
-        // LOCALSTORAGE DATA STORE MODULE
-        // ============================================
         const DataStore = {
             KEYS: {
                 USERS: 'ls_users',
@@ -263,9 +260,7 @@
                 THEME: 'ls_theme'
             },
 
-            // Initialize default data if not exists
             init() {
-                // Users
                 if (!localStorage.getItem(this.KEYS.USERS)) {
                     const defaultUsers = [
                         { id: 1, fullName: 'Администратор Системы', login: 'admin', password: 'admin123', role: 'admin', active: true, createdAt: new Date().toISOString() },
@@ -274,7 +269,6 @@
                     localStorage.setItem(this.KEYS.USERS, JSON.stringify(defaultUsers));
                 }
 
-                // Events (Mock Data - 5 events: 4 active, 1 resolved)
                 if (!localStorage.getItem(this.KEYS.EVENTS)) {
                     const defaultEvents = [
                         {
@@ -354,44 +348,13 @@
                     localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(defaultEvents));
                 }
 
-                // Theme
                 if (!localStorage.getItem(this.KEYS.THEME)) {
                     localStorage.setItem(this.KEYS.THEME, 'dark');
                 }
             },
 
-            getUsers() {
-                return JSON.parse(localStorage.getItem(this.KEYS.USERS) || '[]');
-            },
-
-            getEvents() {
-                return JSON.parse(localStorage.getItem(this.KEYS.EVENTS) || '[]');
-            },
-
-            saveEvent(event) {
-                const events = this.getEvents();
-                const index = events.findIndex(e => e.id === event.id);
-                if (index >= 0) {
-                    events[index] = event;
-                } else {
-                    events.push(event);
-                }
-                localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(events));
-            },
-
-            resolveEvent(eventId, userId, resolution) {
-                const events = this.getEvents();
-                const event = events.find(e => e.id === eventId);
-                if (event) {
-                    event.status = 'resolved';
-                    event.resolvedAt = new Date().toISOString();
-                    event.resolvedBy = userId;
-                    event.resolution = resolution;
-                    localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(events));
-                    return true;
-                }
-                return false;
-            },
+            getUsers() { return JSON.parse(localStorage.getItem(this.KEYS.USERS) || '[]'); },
+            getEvents() { return JSON.parse(localStorage.getItem(this.KEYS.EVENTS) || '[]'); },
 
             authenticate(login, password) {
                 const users = this.getUsers();
@@ -409,62 +372,22 @@
                 return { success: false };
             },
 
-            getSession() {
-                return JSON.parse(localStorage.getItem(this.KEYS.SESSION) || 'null');
-            },
-
-            logout() {
-                localStorage.removeItem(this.KEYS.SESSION);
-            },
-
-            isAuthenticated() {
-                return this.getSession() !== null;
-            },
-
-            hasRole(requiredRole) {
-                const session = this.getSession();
-                return session && (session.role === requiredRole || requiredRole === 'any');
-            },
-
-            getTheme() {
-                return localStorage.getItem(this.KEYS.THEME) || 'dark';
-            },
-
-            setTheme(theme) {
-                localStorage.setItem(this.KEYS.THEME, theme);
-            },
-
-            getStats() {
-                const events = this.getEvents();
-                const active = events.filter(e => e.status === 'active');
-                return {
-                    total: events.length,
-                    active: active.length,
-                    critical: active.filter(e => e.severity === 'critical').length,
-                    warning: active.filter(e => e.severity === 'warning').length,
-                    resolved: events.filter(e => e.status === 'resolved').length
-                };
-            }
+            getSession() { return JSON.parse(localStorage.getItem(this.KEYS.SESSION) || 'null'); },
+            logout() { localStorage.removeItem(this.KEYS.SESSION); },
+            getTheme() { return localStorage.getItem(this.KEYS.THEME) || 'dark'; },
+            setTheme(theme) { localStorage.setItem(this.KEYS.THEME, theme); }
         };
 
-        // Initialize datastore on load
         DataStore.init();
 
-        // ============================================
-        // THEME MANAGEMENT
-        // ============================================
         const themeToggle = document.getElementById('themeToggle');
         const html = document.documentElement;
 
         function applyTheme(theme) {
-            if (theme === 'light') {
-                html.classList.remove('dark');
-            } else {
-                html.classList.add('dark');
-            }
+            if (theme === 'light') html.classList.remove('dark');
+            else html.classList.add('dark');
         }
 
-        // Load saved theme
         applyTheme(DataStore.getTheme());
 
         themeToggle.addEventListener('click', () => {
@@ -474,9 +397,52 @@
             DataStore.setTheme(newTheme);
         });
 
-        // ============================================
-        // AUTHENTICATION
-        // ============================================
+        function updateHeaderState() {
+            const session = DataStore.getSession();
+            const container = document.getElementById('authHeaderBtn');
+            if (session) {
+                const targetUrl = session.role === 'admin' ? 'admin.html' : 'dispatcher.html';
+                const roleLabel = session.role === 'admin' ? 'Администратор' : 'Диспетчер';
+                container.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <a href="${targetUrl}" class="bg-moscow-blue hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-blue-500/30">
+                            <span>Панель (${roleLabel})</span>
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </a>
+                        <button onclick="logoutUser()" class="p-2 text-gray-500 hover:text-red-500 rounded-lg transition" title="Выйти">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openLoginModal()" class="bg-moscow-blue hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-blue-500/30">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+                        Вход в систему
+                    </button>
+                `;
+            }
+        }
+
+        window.logoutUser = () => {
+            DataStore.logout();
+            updateHeaderState();
+        };
+
+        window.openLoginModal = () => document.getElementById('loginModal').classList.remove('hidden');
+        window.closeLoginModal = () => document.getElementById('loginModal').classList.add('hidden');
+        window.handleModalBackdropClick = (e) => {
+            if (e.target.id === 'loginModal') closeLoginModal();
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLoginModal();
+        });
+
+        document.getElementById('username').addEventListener('input', () => {
+            document.getElementById('loginError').classList.add('hidden');
+        });
+
         document.getElementById('loginForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const login = document.getElementById('username').value.trim();
@@ -487,27 +453,39 @@
 
             if (result.success) {
                 errorDiv.classList.add('hidden');
-                // Redirect based on role
                 window.location.href = result.role === 'admin' ? 'admin.html' : 'dispatcher.html';
             } else {
                 errorDiv.classList.remove('hidden');
-                // Shake animation
                 const modal = document.querySelector('#loginModal > div');
                 modal.style.animation = 'none';
-                modal.offsetHeight; // trigger reflow
+                modal.offsetHeight;
                 modal.style.animation = 'shake 0.3s ease-in-out';
             }
         });
 
-        // Update last update time
         function updateTime() {
             const now = new Date();
-            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('ru-RU');
+            const timeEl = document.getElementById('lastUpdate');
+            if (timeEl) timeEl.textContent = now.toLocaleTimeString('ru-RU');
         }
+
+        function updateActiveEventsCount() {
+            const events = DataStore.getEvents();
+            const activeCount = events.filter(e => e.status === 'active').length;
+            const el = document.getElementById('activeEventsBannerCount');
+            if (el) el.textContent = activeCount;
+        }
+
         updateTime();
+        updateActiveEventsCount();
+        updateHeaderState();
         setInterval(updateTime, 1000);
 
-        // Add shake animation
+        window.addEventListener('storage', () => {
+            updateActiveEventsCount();
+            updateHeaderState();
+        });
+
         const style = document.createElement('style');
         style.textContent = `
             @keyframes shake {
