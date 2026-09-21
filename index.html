@@ -3,18 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система предиктивной аналитики коллекторов Москвы</title>
-    
-    <!-- Tailwind CSS -->
+    <title>Предиктивная аналитика коллекторов | Главная</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Яндекс Карты API v2.1 -->
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=00000000-0000-0000-0000-000000000000&lang=ru_RU" type="text/javascript"></script>
-
-    <!-- Настройка Tailwind для темной темы -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -24,852 +14,164 @@
                         dark: {
                             bg: '#0f172a',
                             card: '#1e293b',
-                            border: '#334155'
-                        },
-                        light: {
-                            bg: '#f8fafc',
-                            card: '#ffffff',
-                            border: '#e2e8f0'
+                            text: '#f1f5f9'
                         }
                     }
                 }
             }
         }
     </script>
-
+    <link rel="stylesheet" href="https://unpkg.com/lucide-static@latest/font/lucide.css">
     <style>
-        body {
-            transition: background-color 0.3s ease, color 0.3s ease;
-            overflow: hidden; /* Чтобы скролл был только внутри панелей */
-        }
-
-        /* Стили для скроллбара */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #64748b;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        /* Разделитель панели (Resizer) */
-        .resizer {
-            width: 6px;
-            background-color: #475569;
-            cursor: col-resize;
-            transition: background-color 0.2s;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .resizer:hover, .resizer.resizing {
-            background-color: #3b82f6;
-        }
-        .resizer::after {
-            content: '⋮';
-            color: white;
-            font-size: 14px;
-            letter-spacing: -2px;
-        }
-
-        /* Анимация появления модалок */
-        .modal-enter {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        .modal-enter-active {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 200ms, transform 200ms;
-        }
-
-        /* Сетка уведомлений */
-        .notifications-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            align-content: start;
-        }
-        
-        /* Классы для карты Яндекса */
-        #map-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
+        body { transition: background-color 0.3s, color 0.3s; }
     </style>
 </head>
-<body class="bg-light-bg text-slate-900 dark:bg-dark-bg dark:text-slate-100 h-screen flex flex-col">
+<body class="bg-gray-50 text-gray-900 dark:bg-dark-bg dark:text-dark-text min-h-screen flex flex-col">
 
-    <!-- HEADER -->
-    <header class="h-16 border-b border-light-border dark:border-dark-border bg-white dark:bg-dark-card flex items-center justify-between px-6 shrink-0 z-20 shadow-sm">
-        <div class="flex items-center space-x-3">
-            <div class="p-2 bg-blue-600 rounded-lg">
-                <i data-lucide="layers" class="text-white w-6 h-6"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg leading-tight">MosCollector AI</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Система предиктивной аналитики</p>
-            </div>
+    <!-- Header -->
+    <header class="w-full py-4 px-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card shadow-sm flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <i class="lucide-pie-chart text-blue-600 dark:text-blue-400 w-8 h-8"></i>
+            <h1 class="text-xl font-bold tracking-tight">MosCollector Analytics</h1>
         </div>
-
-        <div class="flex items-center space-x-4">
-            <!-- Индикатор роли (если вошел) -->
-            <div id="roleBadge" class="hidden px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                Диспетчер
-            </div>
-
-            <!-- Переключатель темы -->
-            <button id="themeToggle" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                <i data-lucide="sun" class="w-5 h-5 hidden dark:block text-yellow-400"></i>
-                <i data-lucide="moon" class="w-5 h-5 block dark:hidden text-slate-600"></i>
+        <div class="flex items-center gap-4">
+            <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                <i class="lucide-sun w-5 h-5 hidden dark:block"></i>
+                <i class="lucide-moon w-5 h-5 block dark:hidden"></i>
             </button>
-
-            <!-- Кнопка выхода -->
-            <button id="logoutBtn" class="hidden flex items-center space-x-2 text-sm font-medium text-red-500 hover:text-red-600">
-                <span>Выход</span>
-                <i data-lucide="log-out" class="w-4 h-4"></i>
+            <button onclick="document.getElementById('loginModal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+                <i class="lucide-log-in w-4 h-4"></i> Вход в систему
             </button>
         </div>
     </header>
 
-    <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 relative overflow-hidden">
-        
-        <!-- СТРАНИЦА: LANDING PAGE (Гость) -->
-        <section id="landingPage" class="absolute inset-0 overflow-y-auto p-8 z-10">
-            <div class="max-w-5xl mx-auto space-y-12">
-                <!-- Hero Section -->
-                <div class="text-center space-y-6 py-12">
-                    <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight">
-                        Интеллектуальный мониторинг <br>
-                        <span class="text-blue-600 dark:text-blue-400">инженерных сетей Москвы</span>
-                    </h2>
-                    <p class="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-                        Предиктивная аналитика на базе ИИ для предотвращения аварий в коллекторах. 
-                        Точность прогнозирования 94%, горизонт планирования 24 часа.
-                    </p>
-                    <button onclick="document.getElementById('loginModal').classList.remove('hidden')" class="inline-flex items-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-blue-500/30 transition-all transform hover:-translate-y-1">
-                        Войти в систему
-                        <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
-                    </button>
-                </div>
-
-                <!-- Stats Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="p-6 bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border shadow-sm">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                <i data-lucide="ruler" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
-                            </div>
-                            <h3 class="text-2xl font-bold">825 км</h3>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400">Протяженность контролируемых коллекторов под высоким давлением</p>
-                    </div>
-                    <div class="p-6 bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border shadow-sm">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                <i data-lucide="brain-circuit" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
-                            </div>
-                            <h3 class="text-2xl font-bold">94%</h3>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400">Точность моделей машинного обучения при прогнозе инцидентов</p>
-                    </div>
-                    <div class="p-6 bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border shadow-sm">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                <i data-lucide="clock" class="w-6 h-6 text-orange-600 dark:text-orange-400"></i>
-                            </div>
-                            <h3 class="text-2xl font-bold">24 ч</h3>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400">Горизонт предиктивного прогноза для заблаговременного реагирования</p>
-                    </div>
-                </div>
-
-                <!-- Mini Map Preview -->
-                <div class="bg-white dark:bg-dark-card p-2 rounded-2xl border border-slate-200 dark:border-dark-border shadow-lg h-96 relative overflow-hidden group">
-                    <div id="publicMap" class="w-full h-full rounded-xl z-0"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-white dark:from-dark-bg to-transparent pointer-events-none"></div>
-                    <div class="absolute bottom-6 left-6 pointer-events-none">
-                        <span class="px-3 py-1 bg-black/50 backdrop-blur-md text-white text-sm rounded-full">Публичный слой мониторинга</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- СТРАНИЦА: DASHBOARD (Диспетчер/Админ) -->
-        <section id="dashboardPage" class="hidden absolute inset-0 flex h-full">
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-12">
+        <!-- Hero Section -->
+        <div class="text-center mb-16 max-w-3xl mx-auto">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-300">
+                Интеллектуальный мониторинг инженерных сетей
+            </h2>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                Система предиктивной аналитики для предотвращения аварий в подземных коллекторах Москвы. 
+                Точность прогнозов 94%, горизонт планирования 24 часа.
+            </p>
             
-            <!-- Левая часть: Карта -->
-            <div id="mapPanel" class="relative h-full bg-slate-200 dark:bg-slate-900" style="width: 60%;">
-                <div id="map-container"></div>
-                
-                <!-- Плавающая панель статистики на карте -->
-                <div class="absolute top-4 left-4 z-[1000] flex space-x-2">
-                    <div class="bg-white/90 dark:bg-dark-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-slate-200 dark:border-dark-border">
-                        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">Активные угрозы</div>
-                        <div class="text-2xl font-bold text-red-500" id="criticalCount">0</div>
-                    </div>
-                    <div class="bg-white/90 dark:bg-dark-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-slate-200 dark:border-dark-border">
-                        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">В работе</div>
-                        <div class="text-2xl font-bold text-orange-500" id="warningCount">0</div>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                <div class="p-6 bg-white dark:bg-dark-card rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">825 км</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Протяженность сетей</div>
+                </div>
+                <div class="p-6 bg-white dark:bg-dark-card rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">24/7</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Мониторинг датчиков</div>
+                </div>
+                <div class="p-6 bg-white dark:bg-dark-card rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">AI Core</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Нейросетевой анализ</div>
                 </div>
             </div>
+        </div>
 
-            <!-- Ресайзер -->
-            <div id="resizer" class="resizer"></div>
-
-            <!-- Правая часть: Уведомления -->
-            <div id="notificationsPanel" class="h-full bg-slate-50 dark:bg-[#162032] flex flex-col border-l border-slate-200 dark:border-dark-border overflow-hidden" style="width: 40%;">
-                <div class="p-4 border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card flex justify-between items-center shrink-0">
-                    <h2 class="font-bold text-lg flex items-center">
-                        <i data-lucide="bell-ring" class="mr-2 w-5 h-5 text-blue-500"></i>
-                        Лента событий
-                    </h2>
-                    <span class="text-xs text-slate-400">Real-time</span>
-                </div>
-
-                <!-- Вкладки для Админа -->
-                <div id="adminTabs" class="hidden flex border-b border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card shrink-0">
-                    <button onclick="switchTab('alerts')" id="tabAlerts" class="flex-1 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20">
-                        Сигналы датчиков
-                    </button>
-                    <button onclick="switchTab('users')" id="tabUsers" class="flex-1 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                        Управление доступом
-                    </button>
-                </div>
-
-                <!-- Контент: Список уведомлений -->
-                <div id="alertsContent" class="flex-1 overflow-y-auto p-4">
-                    <div id="notificationsGrid" class="notifications-grid">
-                        <!-- Карточки будут здесь -->
-                    </div>
-                </div>
-
-                <!-- Контент: Управление пользователями (Админ) -->
-                <div id="usersContent" class="hidden flex-1 overflow-y-auto p-4">
-                    <div class="bg-white dark:bg-dark-card rounded-xl p-6 border border-slate-200 dark:border-dark-border mb-6">
-                        <h3 class="font-bold mb-4 flex items-center">
-                            <i data-lucide="user-plus" class="mr-2 w-5 h-5"></i>
-                            Создать сотрудника
-                        </h3>
-                        <form id="createUserForm" class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <input type="text" id="newFullName" placeholder="ФИО" required class="w-full p-2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
-                                <input type="text" id="newLogin" placeholder="Логин" required class="w-full p-2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select id="newRole" class="w-full p-2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 outline-none">
-                                    <option value="dispatcher">Диспетчер</option>
-                                    <option value="admin">Администратор</option>
-                                </select>
-                                <input type="text" id="newDept" placeholder="Подразделение" class="w-full p-2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 outline-none">
-                            </div>
-                            <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors">
-                                Сгенерировать доступ
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="bg-white dark:bg-dark-card rounded-xl border border-slate-200 dark:border-dark-border overflow-hidden">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                <tr>
-                                    <th class="p-3">Логин</th>
-                                    <th class="p-3">Роль</th>
-                                    <th class="p-3">Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTableBody" class="divide-y divide-slate-200 dark:divide-dark-border">
-                                <!-- Пользователи -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- Features -->
+        <div class="grid md:grid-cols-2 gap-8 items-center max-w-5xl mx-auto">
+            <div class="space-y-4">
+                <h3 class="text-2xl font-bold">Технологии будущего</h3>
+                <ul class="space-y-3 text-gray-600 dark:text-gray-300">
+                    <li class="flex items-center gap-2"><i class="lucide-check-circle text-green-500"></i> Анализ газообразной среды (CH4, H2S)</li>
+                    <li class="flex items-center gap-2"><i class="lucide-check-circle text-green-500"></i> Детекция уровня воды и подтоплений</li>
+                    <li class="flex items-center gap-2"><i class="lucide-check-circle text-green-500"></i> Контроль целостности люков (СКУД)</li>
+                </ul>
             </div>
-        </section>
-
+            <div class="bg-gray-200 dark:bg-gray-800 h-64 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+                <span class="text-gray-400 dark:text-gray-500">Интерактивная схема сети (Demo)</span>
+            </div>
+        </div>
     </main>
 
-    <!-- MODAL: LOGIN -->
-    <div id="loginModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-dark-card w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-dark-border p-8 relative animate-in fade-in zoom-in duration-200">
-            <button onclick="document.getElementById('loginModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i data-lucide="x" class="w-6 h-6"></i>
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card w-full max-w-md rounded-2xl shadow-2xl p-8 relative animate-fade-in">
+            <button onclick="document.getElementById('loginModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <i class="lucide-x w-6 h-6"></i>
             </button>
             
-            <div class="text-center mb-8">
-                <div class="inline-flex p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-                    <i data-lucide="shield-check" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
-                </div>
-                <h2 class="text-2xl font-bold">Вход в систему</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm mt-2">Ситуационный центр мониторинга</p>
-            </div>
-
+            <h3 class="text-2xl font-bold mb-6 text-center">Авторизация</h3>
+            
             <form id="loginForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Логин</label>
-                    <div class="relative">
-                        <i data-lucide="user" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
-                        <input type="text" id="usernameInput" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="admin или disp1" required>
-                    </div>
+                    <label class="block text-sm font-medium mb-1 text-gray-500 dark:text-gray-400">Логин</label>
+                    <input type="text" id="username" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="admin или disp1" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Пароль</label>
-                    <div class="relative">
-                        <i data-lucide="lock" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
-                        <input type="password" id="passwordInput" class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="admin123 или disp123" required>
-                    </div>
+                    <label class="block text-sm font-medium mb-1 text-gray-500 dark:text-gray-400">Пароль</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="admin123 или disp123" required>
                 </div>
                 
-                <div id="loginError" class="hidden text-red-500 text-sm text-center bg-red-50 dark:bg-red-900/20 p-2 rounded">
-                    Неверный логин или пароль
-                </div>
-
-                <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition-all transform active:scale-95">
-                    Войти
+                <div id="loginError" class="text-red-500 text-sm hidden text-center">Неверный логин или пароль</div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition transform active:scale-95">
+                    Войти в систему
                 </button>
             </form>
             
-            <div class="mt-6 pt-6 border-t border-slate-200 dark:border-dark-border text-xs text-center text-slate-400">
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-xs text-center text-gray-500 dark:text-gray-400">
                 <p>Тестовые данные:</p>
-                <p>Admin: admin / admin123</p>
-                <p>Dispatcher: disp1 / disp123</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: PROCESS THREAT -->
-    <div id="processModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-dark-card w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-dark-border overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div class="p-6 border-b border-slate-200 dark:border-dark-border flex justify-between items-start bg-slate-50 dark:bg-slate-800/50">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Обработка сигнала</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="modalThreatLocation">Загрузка...</p>
-                </div>
-                <button onclick="closeProcessModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            
-            <div class="p-6 space-y-6">
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-semibold text-blue-800 dark:text-blue-300">Датчик:</span>
-                        <span class="text-sm font-bold text-slate-700 dark:text-slate-200" id="modalSensorType">-</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-semibold text-blue-800 dark:text-blue-300">Вероятность:</span>
-                        <span class="text-sm font-bold text-red-600 dark:text-red-400" id="modalProbability">-%</span>
-                    </div>
-                </div>
-
-                <form id="processForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Действие диспетчера</label>
-                        <div class="space-y-2">
-                            <label class="flex items-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
-                                <input type="radio" name="action" value="brigade" class="w-4 h-4 text-blue-600" checked>
-                                <span class="ml-3 text-sm">Вызов аварийно-спасательной службы / бригады</span>
-                            </label>
-                            <label class="flex items-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
-                                <input type="radio" name="action" value="specialist" class="w-4 h-4 text-blue-600">
-                                <span class="ml-3 text-sm">Направление специалиста для физической проверки</span>
-                            </label>
-                            <label class="flex items-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
-                                <input type="radio" name="action" value="monitor" class="w-4 h-4 text-blue-600">
-                                <span class="ml-3 text-sm">Продолжить мониторинг (повышенное внимание)</span>
-                            </label>
-                            <label class="flex items-center p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
-                                <input type="radio" name="action" value="false" class="w-4 h-4 text-blue-600">
-                                <span class="ml-3 text-sm">Ложное срабатывание (ошибка датчика / работы)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Комментарий</label>
-                        <textarea id="commentInput" rows="3" class="w-full p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Укажите причину решения, номер заявки и т.д."></textarea>
-                    </div>
-
-                    <div class="flex space-x-3 pt-2">
-                        <button type="button" onclick="closeProcessModal()" class="flex-1 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                            Отмена
-                        </button>
-                        <button type="submit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 transition-colors">
-                            Сохранить решение
-                        </button>
-                    </div>
-                </form>
+                <p>Админ: <b>admin / admin123</b></p>
+                <p>Диспетчер: <b>disp1 / disp123</b></p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- STATE MANAGEMENT ---
-        const state = {
-            currentUser: null,
-            theme: 'dark',
-            threats: [
-                { id: 1, type: 'Подтопление', sensor: 'Датчик уровня воды #402', location: 'Коллектор "Садовое кольцо", пикет 12.4', coords: [55.751244, 37.618423], probability: 87, status: 'critical', desc: 'Критический рост уровня сточных вод' },
-                { id: 2, type: 'Задымление', sensor: 'Газоанализатор CO/Smoke #105', location: 'Вентшахта №4, Замоскворечье', coords: [55.732602, 37.610238], probability: 92, status: 'critical', desc: 'Обнаружены продукты горения' },
-                { id: 3, type: 'Проникновение', sensor: 'СКУД (Контакт открытия)', location: 'Люк ревизионный, Пресня', coords: [55.759849, 37.553312], probability: 78, status: 'warning', desc: 'Несанкционированное вскрытие люка' },
-                { id: 4, type: 'Отказ связи', sensor: 'Модем телеметрии #88', location: 'Коллектор "Север", пикет 45.1', coords: [55.823456, 37.498765], probability: 45, status: 'warning', desc: 'Потеря сигнала более 30 минут' },
-                { id: 5, type: 'Температура', sensor: 'Термодатчик #22', location: 'Тоннель "Юг", секция 3', coords: [55.654321, 37.687654], probability: 30, status: 'normal', desc: 'Незначительное отклонение от нормы' }
-            ],
-            users: [
-                { login: 'admin', pass: 'admin123', role: 'admin', name: 'Главный администратор' },
-                { login: 'disp1', pass: 'disp123', role: 'dispatcher', name: 'Диспетчер Иванов А.А.' }
-            ]
-        };
+        // Theme Logic
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        function setTheme(isDark) {
+            if (isDark) {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+        }
 
-        let ymap = null;
-        let placemarks = {};
-        let currentProcessingId = null;
+        // Init Theme
+        if (localStorage.getItem('theme') === 'light') {
+            setTheme(false);
+        } else {
+            setTheme(true);
+        }
 
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initTheme();
-            initRouter();
-            lucide.createIcons();
-            
-            // Загрузка данных из localStorage если есть
-            const savedUsers = localStorage.getItem('mc_users');
-            if(savedUsers) state.users = JSON.parse(savedUsers);
-            
-            const savedThreats = localStorage.getItem('mc_threats');
-            if(savedThreats) state.threats = JSON.parse(savedThreats);
+        themeToggle.addEventListener('click', () => {
+            setTheme(!html.classList.contains('dark'));
         });
 
-        // --- THEME LOGIC ---
-        function initTheme() {
-            const savedTheme = localStorage.getItem('mc_theme') || 'dark';
-            setTheme(savedTheme);
-            
-            document.getElementById('themeToggle').addEventListener('click', () => {
-                const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-                setTheme(newTheme);
-            });
-        }
-
-        function setTheme(theme) {
-            state.theme = theme;
-            localStorage.setItem('mc_theme', theme);
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-            // Перерисовка карты при смене темы (для контраста)
-            if(ymap) {
-                ymap.setTheme(state.theme === 'dark' ? 'dark' : 'light'); // Работает в новых версиях API или через стили
-            }
-        }
-
-        // --- ROUTING & AUTH ---
-        function initRouter() {
-            // Проверка сессии (упрощенно)
-            const sessionUser = sessionStorage.getItem('mc_user');
-            if(sessionUser) {
-                state.currentUser = JSON.parse(sessionUser);
-                showDashboard();
-            } else {
-                showLanding();
-            }
-
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
-            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-        }
-
-        function handleLogin(e) {
+        // Auth Logic
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const login = document.getElementById('usernameInput').value;
-            const pass = document.getElementById('passwordInput').value;
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
             const errorDiv = document.getElementById('loginError');
 
-            const user = state.users.find(u => u.login === login && u.pass === pass);
+            let role = null;
 
-            if(user) {
-                state.currentUser = user;
-                sessionStorage.setItem('mc_user', JSON.stringify(user));
-                errorDiv.classList.add('hidden');
-                document.getElementById('loginModal').classList.add('hidden');
-                document.getElementById('usernameInput').value = '';
-                document.getElementById('passwordInput').value = '';
-                showDashboard();
+            if (user === 'admin' && pass === 'admin123') {
+                role = 'admin';
+            } else if (user === 'disp1' && pass === 'disp123') {
+                role = 'dispatcher';
+            }
+
+            if (role) {
+                localStorage.setItem('userRole', role);
+                localStorage.setItem('isLoggedIn', 'true');
+                window.location.href = role === 'admin' ? 'admin.html' : 'dispatcher.html';
             } else {
                 errorDiv.classList.remove('hidden');
             }
-        }
-
-        function handleLogout() {
-            state.currentUser = null;
-            sessionStorage.removeItem('mc_user');
-            showLanding();
-        }
-
-        function showLanding() {
-            document.getElementById('landingPage').classList.remove('hidden');
-            document.getElementById('dashboardPage').classList.add('hidden');
-            document.getElementById('logoutBtn').classList.add('hidden');
-            document.getElementById('roleBadge').classList.add('hidden');
-            
-            // Инициализация публичной карты если еще не была
-            if(!ymap && window.ymaps) {
-                initPublicMap();
-            }
-        }
-
-        function showDashboard() {
-            document.getElementById('landingPage').classList.add('hidden');
-            document.getElementById('dashboardPage').classList.remove('hidden');
-            document.getElementById('logoutBtn').classList.remove('hidden');
-            document.getElementById('logoutBtn').classList.add('flex');
-            
-            const badge = document.getElementById('roleBadge');
-            badge.classList.remove('hidden');
-            badge.textContent = state.currentUser.role === 'admin' ? 'Администратор' : 'Диспетчер';
-            badge.className = `px-3 py-1 rounded-full text-xs font-semibold ${state.currentUser.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}`;
-
-            // Инициализация рабочей карты
-            if(window.ymaps) {
-                ymaps.ready(initDispatcherMap);
-            }
-            
-            renderNotifications();
-            updateStats();
-            
-            // Настройка прав админа
-            if(state.currentUser.role === 'admin') {
-                document.getElementById('adminTabs').classList.remove('hidden');
-                document.getElementById('adminTabs').classList.add('flex');
-            } else {
-                document.getElementById('adminTabs').classList.add('hidden');
-                document.getElementById('adminTabs').classList.remove('flex');
-                switchTab('alerts'); // Принудительно на алерты
-            }
-        }
-
-        // --- MAPS (YANDEX) ---
-        function initPublicMap() {
-            ymaps.ready(() => {
-                const map = new ymaps.Map("publicMap", {
-                    center: [55.751244, 37.618423],
-                    zoom: 11,
-                    controls: []
-                });
-                
-                // Стиль для публичной карты (упрощенный)
-                map.setType('yandex#map'); 
-                
-                // Добавим пару зон для красоты
-                const circle = new ymaps.Circle([[55.751244, 37.618423], 2000], {
-                    hintContent: 'Зона мониторинга Центр'
-                }, {
-                    draggable: false,
-                    fillColor: "#3B82F6AA",
-                    strokeColor: "#3B82F6",
-                    strokeOpacity: 0.8,
-                    strokeWidth: 2
-                });
-                map.geoObjects.add(circle);
-                ymap = map; // Сохраним ссылку глобально
-            });
-        }
-
-        function initDispatcherMap() {
-            if(ymap) return; // Уже инициализирована
-
-            ymap = new ymaps.Map("map-container", {
-                center: [55.751244, 37.618423],
-                zoom: 12,
-                controls: ['zoomControl', 'fullscreenControl']
-            });
-
-            // Применяем тему карты
-            ymap.setTheme(state.theme === 'dark' ? 'dark' : 'light');
-
-            // Добавляем метки
-            state.threats.forEach(threat => {
-                addPlacemarkToMap(threat);
-            });
-        }
-
-        function addPlacemarkToMap(threat) {
-            let color = 'green';
-            if(threat.status === 'critical') color = 'red';
-            if(threat.status === 'warning') color = 'orange';
-
-            const placemark = new ymaps.Placemark(threat.coords, {
-                balloonContentHeader: `<strong>${threat.type}</strong>`,
-                balloonContentBody: `
-                    <div style="color: #333;">
-                        <p><strong>Датчик:</strong> ${threat.sensor}</p>
-                        <p><strong>Вероятность:</strong> ${threat.probability}%</p>
-                        <p>${threat.desc}</p>
-                        <button onclick="openProcessModal(${threat.id})" style="margin-top:5px; padding:5px 10px; background:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer;">Обработать</button>
-                    </div>
-                `,
-                hintContent: `${threat.type}: ${threat.probability}%`
-            }, {
-                preset: `islands#${color}DotIcon`
-            });
-
-            placemarks[threat.id] = placemark;
-            ymap.geoObjects.add(placemark);
-        }
-
-        function updateMapMarker(threatId) {
-            const threat = state.threats.find(t => t.id === threatId);
-            if(!threat || !placemarks[threatId]) return;
-
-            let color = 'green';
-            if(threat.status === 'critical') color = 'red';
-            if(threat.status === 'warning') color = 'orange';
-
-            placemarks[threatId].options.set('preset', `islands#${color}DotIcon`);
-            // Обновляем балун
-            placemarks[threatId].properties.set('balloonContentBody', `
-                <div style="color: #333;">
-                    <p><strong>Статус:</strong> ${threat.status === 'processed' ? 'Обработано' : threat.status}</p>
-                    <p><strong>Датчик:</strong> ${threat.sensor}</p>
-                </div>
-            `);
-        }
-
-        // --- NOTIFICATIONS PANEL ---
-        function renderNotifications() {
-            const grid = document.getElementById('notificationsGrid');
-            grid.innerHTML = '';
-
-            // Сортировка: критические первыми
-            const sortedThreats = [...state.threats].sort((a, b) => {
-                const score = { critical: 3, warning: 2, normal: 1, processed: 0 };
-                return score[b.status] - score[a.status];
-            });
-
-            sortedThreats.forEach(threat => {
-                if(threat.status === 'processed') return; // Скрываем обработанные из активной ленты
-
-                const card = document.createElement('div');
-                const borderColor = threat.status === 'critical' ? 'border-red-500' : (threat.status === 'warning' ? 'border-orange-500' : 'border-green-500');
-                const bgColor = threat.status === 'critical' ? 'bg-red-50 dark:bg-red-900/10' : (threat.status === 'warning' ? 'bg-orange-50 dark:bg-orange-900/10' : 'bg-green-50 dark:bg-green-900/10');
-                const textColor = threat.status === 'critical' ? 'text-red-600 dark:text-red-400' : (threat.status === 'warning' ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400');
-
-                card.className = `bg-white dark:bg-dark-card rounded-xl p-4 border-l-4 ${borderColor} shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between`;
-                
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold uppercase tracking-wider ${textColor}">${threat.type}</span>
-                            <span class="text-xs text-slate-400">${new Date().toLocaleTimeString()}</span>
-                        </div>
-                        <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-1">${threat.location}</h4>
-                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3 flex items-center">
-                            <i data-lucide="cpu" class="w-3 h-3 mr-1"></i> ${threat.sensor}
-                        </p>
-                        <div class="flex items-center space-x-2 mb-4">
-                            <div class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div class="h-full ${threat.status === 'critical' ? 'bg-red-500' : 'bg-orange-500'}" style="width: ${threat.probability}%"></div>
-                            </div>
-                            <span class="text-xs font-bold ${textColor}">${threat.probability}%</span>
-                        </div>
-                    </div>
-                    <button onclick="openProcessModal(${threat.id})" class="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-                        <i data-lucide="message-square" class="w-4 h-4 mr-2"></i> Ответить / Обработать
-                    </button>
-                `;
-                grid.appendChild(card);
-            });
-            
-            lucide.createIcons();
-        }
-
-        function updateStats() {
-            const critical = state.threats.filter(t => t.status === 'critical').length;
-            const warning = state.threats.filter(t => t.status === 'warning').length;
-            document.getElementById('criticalCount').textContent = critical;
-            document.getElementById('warningCount').textContent = warning;
-        }
-
-        // --- RESIZABLE PANEL LOGIC ---
-        const resizer = document.getElementById('resizer');
-        const mapPanel = document.getElementById('mapPanel');
-        const notifPanel = document.getElementById('notificationsPanel');
-        let isResizing = false;
-
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            resizer.classList.add('resizing');
-            document.body.style.cursor = 'col-resize';
-            // Отключаем выделение текста
-            document.body.style.userSelect = 'none';
         });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            
-            const containerWidth = document.getElementById('dashboardPage').offsetWidth;
-            const newLeftWidth = e.clientX;
-            const percentage = (newLeftWidth / containerWidth) * 100;
-
-            // Ограничения (мин 30%, макс 80%)
-            if (percentage > 30 && percentage < 80) {
-                mapPanel.style.width = `${percentage}%`;
-                notifPanel.style.width = `${100 - percentage}%`;
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            isResizing = false;
-            resizer.classList.remove('resizing');
-            document.body.style.cursor = 'default';
-            document.body.style.userSelect = 'auto';
-        });
-
-        // --- MODAL & PROCESSING LOGIC ---
-        window.openProcessModal = function(id) {
-            currentProcessingId = id;
-            const threat = state.threats.find(t => t.id === id);
-            if(!threat) return;
-
-            document.getElementById('modalThreatLocation').textContent = threat.location;
-            document.getElementById('modalSensorType').textContent = threat.sensor;
-            document.getElementById('modalProbability').textContent = `${threat.probability}%`;
-            
-            document.getElementById('processModal').classList.remove('hidden');
-        };
-
-        window.closeProcessModal = function() {
-            document.getElementById('processModal').classList.add('hidden');
-            currentProcessingId = null;
-            document.getElementById('processForm').reset();
-        };
-
-        document.getElementById('processForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            if(!currentProcessingId) return;
-
-            const action = document.querySelector('input[name="action"]:checked').value;
-            const comment = document.getElementById('commentInput').value;
-
-            // Обновляем состояние
-            const threatIndex = state.threats.findIndex(t => t.id === currentProcessingId);
-            if(threatIndex !== -1) {
-                state.threats[threatIndex].status = 'processed';
-                state.threats[threatIndex].lastAction = { action, comment, time: new Date() };
-                
-                // Сохраняем в localStorage
-                localStorage.setItem('mc_threats', JSON.stringify(state.threats));
-                
-                // Обновляем UI
-                updateMapMarker(currentProcessingId);
-                renderNotifications();
-                updateStats();
-                closeProcessModal();
-                
-                // Показать уведомление об успехе (можно добавить toast)
-                alert('Решение сохранено. Статус объекта обновлен.');
-            }
-        });
-
-        // --- ADMIN TABS & USER MANAGEMENT ---
-        window.switchTab = function(tabName) {
-            const alertsContent = document.getElementById('alertsContent');
-            const usersContent = document.getElementById('usersContent');
-            const tabAlerts = document.getElementById('tabAlerts');
-            const tabUsers = document.getElementById('tabUsers');
-
-            if(tabName === 'alerts') {
-                alertsContent.classList.remove('hidden');
-                usersContent.classList.add('hidden');
-                
-                tabAlerts.classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/20');
-                tabAlerts.classList.remove('border-transparent', 'text-slate-500');
-                
-                tabUsers.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/20');
-                tabUsers.classList.add('border-transparent', 'text-slate-500');
-            } else {
-                alertsContent.classList.add('hidden');
-                usersContent.classList.remove('hidden');
-                
-                tabUsers.classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/20');
-                tabUsers.classList.remove('border-transparent', 'text-slate-500');
-                
-                tabAlerts.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'bg-blue-50', 'dark:bg-blue-900/20');
-                tabAlerts.classList.add('border-transparent', 'text-slate-500');
-                
-                renderUsersTable();
-            }
-        };
-
-        function renderUsersTable() {
-            const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = '';
-            
-            state.users.forEach(user => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors';
-                tr.innerHTML = `
-                    <td class="p-3 font-medium text-slate-700 dark:text-slate-300">${user.login}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-1 rounded text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}">
-                            ${user.role === 'admin' ? 'Админ' : 'Диспетчер'}
-                        </span>
-                    </td>
-                    <td class="p-3">
-                        ${user.login !== 'admin' ? `
-                            <button onclick="deleteUser('${user.login}')" class="text-red-500 hover:text-red-700 text-sm font-medium">Удалить</button>
-                        ` : '<span class="text-slate-400 text-xs">Системный</span>'}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        window.deleteUser = function(login) {
-            if(confirm(`Удалить пользователя ${login}?`)) {
-                state.users = state.users.filter(u => u.login !== login);
-                localStorage.setItem('mc_users', JSON.stringify(state.users));
-                renderUsersTable();
-            }
-        };
-
-        document.getElementById('createUserForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const fullName = document.getElementById('newFullName').value;
-            const login = document.getElementById('newLogin').value;
-            const role = document.getElementById('newRole').value;
-            const dept = document.getElementById('newDept').value;
-            
-            // Генерация простого пароля
-            const password = Math.random().toString(36).slice(-8);
-            
-            const newUser = {
-                login,
-                pass: password,
-                role,
-                name: fullName,
-                dept
-            };
-            
-            state.users.push(newUser);
-            localStorage.setItem('mc_users', JSON.stringify(state.users));
-            
-            alert(`Пользователь создан!\nЛогин: ${login}\nПароль: ${password}`);
-            document.getElementById('createUserForm').reset();
-            renderUsersTable();
-        });
-
     </script>
 </body>
 </html>
