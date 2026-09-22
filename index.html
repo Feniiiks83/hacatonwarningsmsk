@@ -15,11 +15,11 @@
                         'dark-card': '#1e293b',
                         moscow: {
                             blue: '#0066CC',
-                            accent: '#00B4D8'
+                            accent: '#00B4D8',
+                            purple: '#7C3AED'
                         }
                     },
                     animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'fade-in': 'fadeIn 0.3s ease-out'
                     },
                     keyframes: {
@@ -39,26 +39,26 @@
         html:not(.dark) .icon-moon { display: block; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 min-h-screen flex flex-col justify-between items-center p-4">
+<body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 min-h-screen flex flex-col justify-between items-center p-4 font-sans">
 
-    <!-- Top Status Bar -->
-    <header class="w-full max-w-5xl flex justify-between items-center py-4 px-6 bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-slate-700 shadow-lg">
+    <!-- Top Status Header -->
+    <header class="w-full max-w-5xl flex justify-between items-center py-3.5 px-6 bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div class="flex items-center gap-3">
             <svg class="w-8 h-8 text-moscow-blue dark:text-moscow-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
             <div>
                 <h1 class="font-bold text-base leading-tight">АО «Москоллектор»</h1>
-                <p class="text-xs text-gray-500 dark:text-slate-400">Внутренняя диспетчерская система предиктивного мониторинга</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Система ситуационного и предиктивного мониторинга</p>
             </div>
         </div>
         
         <div class="flex items-center gap-4">
-            <div class="hidden sm:flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-900/60 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700">
+            <div class="hidden sm:flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-900/60 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span>Обновление системы: <strong id="lastUpdate">--:--:--</strong></span>
+                <span>Система активна: <strong id="lastUpdate">--:--:--</strong></span>
             </div>
-            <button id="themeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 transition" aria-label="Переключить тему">
+            <button id="themeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition" aria-label="Переключить тему">
                 <svg class="icon-sun w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="5"/>
                     <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
@@ -70,32 +70,32 @@
         </div>
     </header>
 
-    <!-- Main Auth Card -->
-    <main class="w-full max-w-md my-auto py-8">
-        <div class="bg-white dark:bg-dark-card border border-gray-200 dark:border-slate-700 rounded-2xl shadow-2xl p-8 animate-fade-in relative overflow-hidden">
-            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-600"></div>
+    <!-- Auth Card -->
+    <main class="w-full max-w-md my-auto py-6">
+        <div class="bg-white dark:bg-dark-card border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-8 animate-fade-in relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-cyan-400 to-purple-600"></div>
             
             <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-500/20">
+                <div class="w-16 h-16 bg-blue-600/10 dark:bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-500/20">
                     <svg class="w-8 h-8 text-moscow-blue dark:text-moscow-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
                 </div>
-                <h2 class="text-2xl font-bold">Вход в систему</h2>
-                <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">Доступ разрешен только авторизованным сотрудникам</p>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Вход в систему</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Авторизация сотрудников диспетчерской и администрации</p>
             </div>
 
-            <form id="loginForm" class="space-y-4">
+            <form id="loginForm" class="space-y-4" onsubmit="handleLogin(event)">
                 <div>
-                    <label class="block text-xs font-semibold mb-2 text-gray-700 dark:text-slate-300 uppercase tracking-wider">Логин учетной записи</label>
-                    <input type="text" id="username" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/90 text-gray-900 dark:text-white focus:ring-2 focus:ring-moscow-blue focus:border-transparent outline-none transition text-sm" placeholder="Введите логин" required autocomplete="username">
+                    <label class="block text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300 uppercase tracking-wider">Логин учетной записи</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-moscow-blue focus:border-transparent outline-none transition text-sm" placeholder="Введите логин" required autocomplete="username">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold mb-2 text-gray-700 dark:text-slate-300 uppercase tracking-wider">Пароль</label>
-                    <input type="password" id="password" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/90 text-gray-900 dark:text-white focus:ring-2 focus:ring-moscow-blue focus:border-transparent outline-none transition text-sm" placeholder="••••••••" required autocomplete="current-password">
+                    <label class="block text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300 uppercase tracking-wider">Пароль</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-moscow-blue focus:border-transparent outline-none transition text-sm" placeholder="••••••••" required autocomplete="current-password">
                 </div>
 
-                <div id="loginError" class="hidden bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 text-xs py-3 px-4 rounded-xl text-center">
+                <div id="loginError" class="hidden bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 text-xs py-3 px-4 rounded-xl text-center font-medium">
                     ⚠️ Неверный логин или пароль
                 </div>
 
@@ -103,28 +103,28 @@
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
                     </svg>
-                    Войти в диспетчерскую
+                    Войти в систему
                 </button>
             </form>
 
-            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-slate-700/60">
-                <p class="text-xs text-center text-gray-500 dark:text-slate-400 mb-3">Тестовые аккаунты системы:</p>
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-xs text-center text-gray-500 dark:text-gray-400 mb-3">Быстрый вход для тестирования:</p>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="bg-gray-100 dark:bg-slate-900/60 p-2.5 rounded-lg border border-gray-200 dark:border-slate-700/50 text-center cursor-pointer hover:border-blue-500 transition" onclick="fillCreds('admin', 'admin123')">
-                        <p class="font-semibold text-purple-600 dark:text-purple-400">Администратор</p>
-                        <p class="text-gray-500 dark:text-slate-400 font-mono text-[11px] mt-0.5">admin / admin123</p>
+                    <div class="bg-gray-50 dark:bg-slate-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-center cursor-pointer hover:border-purple-500 transition" onclick="fillCreds('admin', 'admin123')">
+                        <p class="font-bold text-purple-600 dark:text-purple-400">Администратор</p>
+                        <p class="text-gray-500 dark:text-gray-400 font-mono text-[11px] mt-0.5">admin / admin123</p>
                     </div>
-                    <div class="bg-gray-100 dark:bg-slate-900/60 p-2.5 rounded-lg border border-gray-200 dark:border-slate-700/50 text-center cursor-pointer hover:border-blue-500 transition" onclick="fillCreds('disp1', 'disp123')">
-                        <p class="font-semibold text-blue-600 dark:text-blue-400">Диспетчер</p>
-                        <p class="text-gray-500 dark:text-slate-400 font-mono text-[11px] mt-0.5">disp1 / disp123</p>
+                    <div class="bg-gray-50 dark:bg-slate-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-center cursor-pointer hover:border-blue-500 transition" onclick="fillCreds('dispatcher', 'dispatch123')">
+                        <p class="font-bold text-moscow-blue dark:text-moscow-accent">Диспетчер</p>
+                        <p class="text-gray-500 dark:text-gray-400 font-mono text-[11px] mt-0.5">dispatcher / dispatch123</p>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="text-center text-xs text-gray-500 dark:text-slate-500 py-2">
-        © 2026 АО «Москоллектор». Защищенный контур диспетчерского управления.
+    <footer class="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+        © 2026 АО «Москоллектор». Все права защищены.
     </footer>
 
     <script>
@@ -138,66 +138,41 @@
                 });
             },
             setTheme(theme) {
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
                 localStorage.setItem('ls_theme', theme);
             }
         };
 
-        const DataStore = {
-            KEYS: { USERS: 'ls_users', EVENTS: 'ls_events', SESSION: 'ls_session', THEME: 'ls_theme' },
-            init() {
-                if (!localStorage.getItem(this.KEYS.USERS)) {
-                    localStorage.setItem(this.KEYS.USERS, JSON.stringify([
-                        { id: 1, fullName: 'Администратор Системы', login: 'admin', password: 'admin123', role: 'admin', active: true },
-                        { id: 2, fullName: 'Петров Дмитрий Сергеевич', login: 'disp1', password: 'disp123', role: 'dispatcher', active: true }
-                    ]));
-                }
-                if (!localStorage.getItem(this.KEYS.EVENTS)) {
-                    localStorage.setItem(this.KEYS.EVENTS, JSON.stringify([
-                        { id: 1, type: 'flood', title: 'Подтопление коллектора', severity: 'critical', sensor: 'Датчик уровня воды LW-402', location: 'Коллектор "Садовое кольцо", пикет 12+40', coords: [55.7412, 37.6012], probability: 92, forecast: '2 часа', status: 'active', createdAt: new Date(Date.now() - 3600000).toISOString(), description: 'Зафиксировано критическое повышение уровня воды.' },
-                        { id: 2, type: 'fire', title: 'Задымление в коллекторе', severity: 'critical', sensor: 'Газоанализатор CH4-G2', location: 'Вентшахта №8, ул. Тверская', coords: [55.7558, 37.6173], probability: 88, forecast: '1 час', status: 'active', createdAt: new Date(Date.now() - 5400000).toISOString(), description: 'Обнаружена высокая концентрация метана.' },
-                        { id: 3, type: 'access', title: 'Несанкционированный доступ', severity: 'warning', sensor: 'Контактный датчик СКУД M-15', location: 'проспект Мира, у д. 45', coords: [55.7835, 37.6465], probability: 75, forecast: '-', status: 'active', createdAt: new Date(Date.now() - 7200000).toISOString(), description: 'Зафиксировано вскрытие люка без авторизации.' }
-                    ]));
-                }
-            },
-            authenticate(login, password) {
-                const users = JSON.parse(localStorage.getItem(this.KEYS.USERS) || '[]');
-                const user = users.find(u => u.login === login && u.password === password && u.active);
-                if (user) {
-                    localStorage.setItem(this.KEYS.SESSION, JSON.stringify({ userId: user.id, login: user.login, role: user.role, fullName: user.fullName }));
-                    return { success: true, role: user.role };
-                }
-                return { success: false };
-            }
-        };
-
-        ThemeManager.init();
-        DataStore.init();
-
-        function fillCreds(u, p) {
-            document.getElementById('username').value = u;
-            document.getElementById('password').value = p;
+        function fillCreds(user, pass) {
+            document.getElementById('username').value = user;
+            document.getElementById('password').value = pass;
         }
 
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        function handleLogin(e) {
             e.preventDefault();
-            const res = DataStore.authenticate(document.getElementById('username').value.trim(), document.getElementById('password').value.trim());
-            if (res.success) {
-                window.location.href = res.role === 'admin' ? 'admin.html' : 'dispatcher.html';
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-            }
-        });
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+            const errorBox = document.getElementById('loginError');
 
-        function updateTime() {
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ru-RU');
+            if (u === 'admin' && p === 'admin123') {
+                localStorage.setItem('ls_session', JSON.stringify({ user: 'Администратор', role: 'admin' }));
+                window.location.href = 'admin.html';
+            } else if ((u === 'dispatcher' || u === 'dispatch') && (p === 'dispatch123' || p === 'dispatcher')) {
+                localStorage.setItem('ls_session', JSON.stringify({ user: 'Иванов А. Е.', role: 'dispatcher' }));
+                window.location.href = 'dispatcher.html';
+            } else {
+                errorBox.classList.remove('hidden');
+            }
         }
-        updateTime();
-        setInterval(updateTime, 1000);
+
+        window.onload = () => {
+            ThemeManager.init();
+            setInterval(() => {
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ru-RU');
+            }, 1000);
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ru-RU');
+        };
     </script>
 </body>
 </html>
