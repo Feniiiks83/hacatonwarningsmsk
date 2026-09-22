@@ -3,94 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Администрирование — ОДС «Москоллектор»</title>
+    <title>Администрирование | Ситуационный центр АО «Москоллектор»</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Яндекс Карта API v2.1 -->
+    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&load=package.full" type="text/javascript"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { colors: { darkbg: '#0f172a', cardbg: '#1e293b' } } }
+            theme: {
+                extend: {
+                    colors: {
+                        moscow: { blue: '#0066CC', dark: '#0f172a', card: '#1e293b', accent: '#00B4D8' }
+                    }
+                }
+            }
         }
     </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        .icon-sun, .icon-moon { display: none; }
+        html.dark .icon-sun { display: block; }
+        html:not(.dark) .icon-moon { display: block; }
+        .splitter { width: 6px; cursor: col-resize; background-color: #334155; }
+        .splitter:hover, .splitter.active { background-color: #00B4D8; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
 </head>
-<body class="bg-slate-100 dark:bg-darkbg text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-900 text-gray-100 min-h-screen flex flex-col overflow-hidden">
 
-    <!-- Header -->
-    <header class="h-16 bg-white dark:bg-cardbg border-b border-slate-200 dark:border-slate-800 px-6 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <div class="p-2 bg-indigo-600 text-white rounded-lg">
-                <i data-lucide="shield-check" class="w-5 h-5"></i>
+    <!-- Header Panel -->
+    <header class="h-16 bg-slate-800/90 backdrop-blur border-b border-slate-700/80 px-4 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-purple-600/20 rounded-xl flex items-center justify-center border border-purple-500/40">
+                    <svg class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm text-white leading-tight">Панель Администратора</h1>
+                    <p class="text-[11px] text-slate-400">АО «Москоллектор» • Управление доступом &amp; Мониторинг</p>
+                </div>
             </div>
-            <div>
-                <h1 class="font-bold text-base">Панель администратора безопасности</h1>
-                <p class="text-xs text-slate-400">Управление учетными записями и доступом</p>
-            </div>
+
+            <!-- Tabs Switcher -->
+            <nav class="hidden md:flex bg-slate-900/80 p-1 rounded-xl border border-slate-700 ml-4">
+                <button onclick="switchTab('monitoring')" id="tabMonitoringBtn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-moscow-blue text-white transition">Диспетчерский мониторинг</button>
+                <button onclick="switchTab('users')" id="tabUsersBtn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Управление пользователями</button>
+            </nav>
         </div>
 
-        <div class="flex items-center space-x-4">
-            <a href="dispatcher.html" class="px-3 py-1.5 bg-indigo-600/10 text-indigo-400 border border-indigo-500/30 rounded-lg text-xs font-medium hover:bg-indigo-600/20">
-                Открыть пульт диспетчера
-            </a>
-            <button onclick="logout()" class="text-xs text-red-400 hover:underline">Выйти</button>
+        <div class="flex items-center gap-3">
+            <!-- ML Update Forecast Button -->
+            <button onclick="triggerMLUpdate()" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-moscow-accent border border-blue-500/30 rounded-lg text-xs font-medium transition">
+                <span>Обновить прогноз ML</span>
+            </button>
+
+            <!-- Sound Mute/Unmute Button -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-300 transition" title="Включить/Выключить звук"></button>
+
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="p-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-300 transition">
+                <svg class="icon-sun w-5 h-5 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <svg class="icon-moon w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+
+            <div class="h-6 w-px bg-slate-700"></div>
+
+            <!-- User Info & Logout -->
+            <div class="flex items-center gap-2">
+                <div class="text-right hidden sm:block">
+                    <p id="adminUserName" class="text-xs font-semibold text-purple-300">Администратор</p>
+                    <p class="text-[10px] text-purple-400">Полный доступ</p>
+                </div>
+                <button onclick="logout()" class="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-6 max-w-5xl mx-auto w-full space-y-6">
-        
-        <!-- Форма создания нового диспетчера -->
-        <div class="bg-white dark:bg-cardbg p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <h2 class="font-bold text-sm flex items-center space-x-2">
-                <i data-lucide="user-plus" class="w-4 h-4 text-indigo-500"></i>
-                <span>Создать новую учетную запись диспетчера</span>
-            </h2>
-
-            <form id="addUserForm" class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <input type="text" id="newFio" placeholder="ФИО сотрудника" required class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                <input type="text" id="newUser" placeholder="Логин" required class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                <input type="password" id="newPass" placeholder="Пароль" required class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                <div class="sm:col-span-3 flex justify-end">
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">Выдать доступ</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Таблица пользователей -->
-        <div class="bg-white dark:bg-cardbg p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <h2 class="font-bold text-sm flex items-center space-x-2">
-                <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
-                <span>Реестр активных учетных записей</span>
-            </h2>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 uppercase font-semibold text-slate-400">
-                        <tr>
-                            <th class="p-3">ФИО</th>
-                            <th class="p-3">Логин</th>
-                            <th class="p-3">Роль</th>
-                            <th class="p-3 text-right">Действие</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTable" class="divide-y divide-slate-200 dark:divide-slate-800">
-                        <tr>
-                            <td class="p-3">Иванов И.И.</td>
-                            <td class="p-3">disp1</td>
-                            <td class="p-3"><span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded">Диспетчер</span></td>
-                            <td class="p-3 text-right"><button class="text-red-400 hover:underline">Отозвать доступ</button></td>
-                        </tr>
-                    </tbody>
-                </table>
+    <!-- TAB 1: Dispatcher Workspace View -->
+    <div id="tabMonitoringView" class="flex flex-1 overflow-hidden relative">
+        <div id="mapPanel" class="relative overflow-hidden flex flex-col" style="width: 55%; min-width: 320px;">
+            <div id="map" class="w-full h-full bg-slate-950"></div>
+            <div class="absolute top-3 left-3 z-10">
+                <button onclick="toggleHeatmap()" class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-xs text-white rounded-lg border border-slate-600 backdrop-blur shadow">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <span>🔥 Тепловая карта: <strong id="heatmapStatus">ВКЛ</strong></span>
+                </button>
             </div>
         </div>
-    </main>
+
+        <div id="splitter" class="splitter"></div>
+
+        <div id="feedPanel" class="flex-1 bg-slate-900 flex flex-col min-w-[320px] overflow-hidden">
+            <div class="p-3 bg-slate-800/60 border-b border-slate-700/80 flex items-center justify-between gap-2 shrink-0">
+                <input type="text" id="searchInput" oninput="renderEvents()" placeholder="Поиск объектов..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none">
+                <div class="flex items-center gap-2">
+                    <button onclick="exportToExcel()" class="bg-moscow-blue hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs">📊 Excel</button>
+                    <button onclick="exportToPDF()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs">📄 PDF</button>
+                </div>
+            </div>
+            <div id="eventsContainer" class="p-3 overflow-y-auto flex-1 grid grid-cols-1 gap-3 content-start"></div>
+        </div>
+    </div>
+
+    <!-- TAB 2: User Access Management View -->
+    <div id="tabUsersView" class="hidden flex-1 p-6 bg-slate-900 overflow-y-auto">
+        <div class="max-w-5xl mx-auto space-y-6">
+            
+            <!-- Create User Form -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <span>➕ Регистрация нового диспетчера</span>
+                </h3>
+                <form id="createUserForm" onsubmit="createUser(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ФИО Сотрудника</label>
+                        <input type="text" id="newFullName" required placeholder="Иванов Иван Иванович" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Логин</label>
+                        <input type="text" id="newLogin" required placeholder="disp_user" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Пароль</label>
+                        <input type="text" id="newPassword" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow">Создать аккаунт</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Users List Table -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-bold text-white mb-4">Реестр пользователей системы</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">ФИО</th>
+                                <th class="p-3">Логин</th>
+                                <th class="p-3">Роль</th>
+                                <th class="p-3">Статус</th>
+                                <th class="p-3 text-right">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" class="divide-y divide-slate-700/60">
+                            <!-- Injected JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
 
     <script>
-        lucide.createIcons();
-        function logout() {
-            localStorage.removeItem('currentUser');
+        // Store
+        const DataStore = {
+            KEYS: { USERS: 'ls_users', EVENTS: 'ls_events', SESSION: 'ls_session', SOUND: 'ls_sound_muted' },
+            getUsers() { return JSON.parse(localStorage.getItem(this.KEYS.USERS) || '[]'); },
+            saveUsers(u) { localStorage.setItem(this.KEYS.USERS, JSON.stringify(u)); },
+            getEvents() { return JSON.parse(localStorage.getItem(this.KEYS.EVENTS) || '[]'); },
+            saveEvents(e) { localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(e)); }
+        };
+
+        // Auth
+        const session = JSON.parse(localStorage.getItem(DataStore.KEYS.SESSION) || 'null');
+        if (!session || session.role !== 'admin') {
             window.location.href = 'index.html';
         }
+
+        function logout() {
+            localStorage.removeItem(DataStore.KEYS.SESSION);
+            window.location.href = 'index.html';
+        }
+
+        // Sound System
+        let soundMuted = localStorage.getItem(DataStore.KEYS.SOUND) === 'true';
+        function updateSoundButtonUI() {
+            const btn = document.getElementById('soundToggleBtn');
+            btn.innerHTML = soundMuted ? 
+                `<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>` :
+                `<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>`;
+        }
+        updateSoundButtonUI();
+
+        function toggleSound() {
+            soundMuted = !soundMuted;
+            localStorage.setItem(DataStore.KEYS.SOUND, soundMuted);
+            updateSoundButtonUI();
+        }
+
+        // Map & Heatmap
+        let myMap = null, heatmapInstance = null, heatmapActive = true;
+        ymaps.ready(() => {
+            myMap = new ymaps.Map('map', { center: [55.751244, 37.618423], zoom: 11 });
+            myMap.container.fitToViewport();
+            initHeatmap();
+        });
+
+        function initHeatmap() {
+            if (!myMap || !window.ymaps) return;
+            ymaps.modules.require(['Heatmap'], (Heatmap) => {
+                const events = DataStore.getEvents();
+                const data = {
+                    type: 'FeatureCollection',
+                    features: events.map(e => ({ type: 'Feature', geometry: { type: 'Point', coordinates: e.coords }, properties: { weight: e.probability / 100 } }))
+                };
+                if (heatmapInstance) heatmapInstance.destroy();
+                heatmapInstance = new Heatmap(data, { radius: 30, dissipating: true, opacity: 0.75 });
+                if (heatmapActive) heatmapInstance.setMap(myMap);
+            });
+        }
+
+        function toggleHeatmap() {
+            heatmapActive = !heatmapActive;
+            document.getElementById('heatmapStatus').textContent = heatmapActive ? 'ВКЛ' : 'ВЫКЛ';
+            if (heatmapInstance) heatmapInstance.setMap(heatmapActive ? myMap : null);
+        }
+
+        // Render Events
+        function renderEvents() {
+            const container = document.getElementById('eventsContainer');
+            const events = DataStore.getEvents();
+            container.innerHTML = events.map(item => `
+                <div class="p-3 rounded-xl border border-slate-700 bg-slate-800/80">
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-bold text-xs text-white">${item.title}</h4>
+                        <span class="text-xs font-mono font-bold text-amber-400">${item.probability}%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">📍 ${item.location}</p>
+                </div>
+            `).join('');
+        }
+
+        // Tabs
+        function switchTab(tab) {
+            document.getElementById('tabMonitoringView').classList.toggle('hidden', tab !== 'monitoring');
+            document.getElementById('tabUsersView').classList.toggle('hidden', tab !== 'users');
+            if (tab === 'monitoring' && myMap) myMap.container.fitToViewport();
+        }
+
+        // User Management
+        function renderUsers() {
+            const users = DataStore.getUsers();
+            document.getElementById('usersTableBody').innerHTML = users.map(u => `
+                <tr>
+                    <td class="p-3">${u.id}</td>
+                    <td class="p-3 font-semibold text-white">${u.fullName}</td>
+                    <td class="p-3 font-mono">${u.login}</td>
+                    <td class="p-3">${u.role === 'admin' ? 'Администратор' : 'Диспетчер'}</td>
+                    <td class="p-3">${u.active ? '🟢 Активен' : '🔴 Заблокирован'}</td>
+                    <td class="p-3 text-right">
+                        ${u.role !== 'admin' ? `<button onclick="toggleUser(${u.id})" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-[10px]">${u.active ? 'Заблокировать' : 'Разблокировать'}</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function createUser(e) {
+            e.preventDefault();
+            const users = DataStore.getUsers();
+            users.push({
+                id: Date.now(),
+                fullName: document.getElementById('newFullName').value,
+                login: document.getElementById('newLogin').value,
+                password: document.getElementById('newPassword').value,
+                role: 'dispatcher',
+                active: true
+            });
+            DataStore.saveUsers(users);
+            renderUsers();
+            document.getElementById('createUserForm').reset();
+        }
+
+        function toggleUser(id) {
+            const users = DataStore.getUsers();
+            const u = users.find(x => x.id === id);
+            if (u) { u.active = !u.active; DataStore.saveUsers(users); renderUsers(); }
+        }
+
+        // Export & ML Trigger
+        function exportToExcel() {
+            const events = DataStore.getEvents();
+            let csv = "\uFEFFID;Заголовок;Локация;Вероятность\n";
+            events.forEach(e => { csv += `"${e.id}";"${e.title}";"${e.location}";"${e.probability}"\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Events_Report.csv'; a.click();
+        }
+
+        function exportToPDF() { window.print(); }
+
+        document.getElementById('themeToggle').addEventListener('click', () => document.documentElement.classList.toggle('dark'));
+
+        renderEvents();
+        renderUsers();
     </script>
 </body>
 </html>
