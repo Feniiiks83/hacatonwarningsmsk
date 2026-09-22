@@ -62,6 +62,11 @@
                 <span id="currentTime">--:--:--</span>
             </div>
 
+            <!-- Кнопка включения / выключения звука -->
+            <button id="soundToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition" title="Управление звуком">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+
             <button id="themeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                 <svg class="icon-sun w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2"/></svg>
                 <svg class="icon-moon w-4 h-4 sm:w-5 sm:h-5 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -130,6 +135,19 @@
         <div id="main-view-monitoring" class="absolute inset-0 flex flex-col md:flex-row min-h-0">
             <!-- Left Map Area -->
             <div id="left-panel" class="h-1/2 md:h-full relative bg-gray-800 w-full md:w-[60%] flex flex-col min-h-0">
+                
+                <!-- Карта & Оверлей управления -->
+                <div class="absolute top-3 right-3 z-10 flex gap-2">
+                    <button id="heatmapToggleBtn" onclick="toggleHeatmap()" class="bg-white/90 dark:bg-dark-card/90 hover:bg-orange-600 hover:text-white text-gray-800 dark:text-white backdrop-blur px-3 py-1.5 rounded-xl shadow border border-gray-200 dark:border-gray-700 text-xs font-bold transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c0 0-6 4-6 10a6 6 0 0 0 12 0c0-6-6-10-6-10z"/></svg>
+                        <span>Тепловая карта рисков</span>
+                    </button>
+                    <button onclick="exportData('excel')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl shadow text-xs font-bold transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span>Экспорт (Excel)</span>
+                    </button>
+                </div>
+
                 <div id="map-container" class="w-full h-full flex-1 min-h-0"></div>
                 <div class="absolute top-3 left-3 bg-white/90 dark:bg-dark-card/90 backdrop-blur p-3 rounded-xl shadow-lg z-10 text-xs border border-gray-200 dark:border-gray-700">
                     <h4 class="font-bold mb-1 flex items-center gap-1.5 text-xs sm:text-sm">
@@ -168,10 +186,16 @@
                             <h3 class="font-bold text-base sm:text-lg">Общая панель датчиков и объектов</h3>
                             <p class="text-xs text-gray-500 dark:text-gray-400">Реестр подключенного оборудования</p>
                         </div>
-                        <button onclick="toggleFilterMenu()" class="bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-xs px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-moscow-blue dark:text-moscow-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                            <span>Фильтры реестра</span>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportData('excel')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                Экспорт в Excel
+                            </button>
+                            <button onclick="toggleFilterMenu()" class="bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-xs px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-moscow-blue dark:text-moscow-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                <span>Фильтры реестра</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div id="advancedFilterBox" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-200 dark:border-gray-700 hidden">
@@ -253,7 +277,6 @@
     <div id="processModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-dark-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 max-h-[90vh]">
             
-            <!-- Modal Header -->
             <div class="p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-orange-500/10 flex justify-between items-start shrink-0">
                 <div>
                     <div class="flex items-center gap-2">
@@ -270,7 +293,6 @@
 
             <div class="p-5 space-y-5 overflow-y-auto flex-1">
                 
-                <!-- Additional Details Panel -->
                 <div class="bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-2 text-xs">
                     <h4 class="font-bold text-xs uppercase tracking-wider text-moscow-blue dark:text-moscow-accent">Дополнительные сведения по запросу</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -293,7 +315,6 @@
                     </div>
                 </div>
 
-                <!-- Multiple Response Options -->
                 <div class="space-y-2">
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Вариант реагирования / ответа:</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -331,7 +352,6 @@
                     </div>
                 </div>
 
-                <!-- Decision Parameters -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-gray-300">Приоритет реагирования</label>
@@ -354,7 +374,6 @@
 
             </div>
 
-            <!-- Footer Buttons -->
             <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-slate-800/50 shrink-0">
                 <button onclick="closeModal()" class="px-4 py-2.5 text-xs font-semibold rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">Отмена</button>
                 <button onclick="saveDecision()" class="px-5 py-2.5 text-xs font-bold rounded-xl bg-moscow-blue hover:bg-blue-600 text-white transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
@@ -388,6 +407,54 @@
             }
         };
 
+        // Менеджер звука и оповещений
+        const SoundManager = {
+            isMuted: localStorage.getItem('ls_muted') === 'true',
+            init() {
+                this.updateButtonUI();
+                document.getElementById('soundToggle')?.addEventListener('click', () => this.toggleMute());
+            },
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                localStorage.setItem('ls_muted', this.isMuted);
+                this.updateButtonUI();
+                if (!this.isMuted) this.playAlertSound();
+                showToast('Звук', this.isMuted ? 'Звуковые сигналы отключены' : 'Звуковые сигналы включены');
+            },
+            updateButtonUI() {
+                const btn = document.getElementById('soundToggle');
+                if (!btn) return;
+                if (this.isMuted) {
+                    btn.innerHTML = `<svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+                } else {
+                    btn.innerHTML = `<svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+                }
+            },
+            playAlertSound() {
+                if (this.isMuted) return;
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
+                    const ctx = new AudioCtx();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.25);
+                    
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } catch(e) {}
+            }
+        };
+
         const DataStore = {
             KEYS: { EVENTS: 'ls_events', SESSION: 'ls_session', THEME: 'ls_theme' },
             getEvents() {
@@ -417,6 +484,8 @@
         ];
 
         let myMap = null;
+        let heatmap = null;
+        let heatmapActive = false;
         let currentAlertId = null;
         let activeTabFilter = 'active';
 
@@ -428,7 +497,67 @@
             ymaps.ready(() => {
                 myMap = new ymaps.Map("map-container", { center: [55.751244, 37.618423], zoom: 11, controls: ['zoomControl'] });
                 renderMarkers();
+                renderAlertsList();
+                updateKPIs();
             });
+        }
+
+        function toggleHeatmap() {
+            if (!myMap) return;
+            if (!heatmap) {
+                ymaps.modules.require(['Heatmap'], function (Heatmap) {
+                    const events = DataStore.getEvents();
+                    const points = events.map(e => e.coords).filter(c => c);
+                    const extraHazardPoints = [
+                        [55.7601, 37.6062], [55.7608, 37.6075], [55.7480, 37.6250],
+                        [55.7485, 37.6240], [55.7820, 37.6330], [55.7550, 37.6500],
+                        [55.7512, 37.6184], [55.7350, 37.5950], [55.7700, 37.6700]
+                    ];
+                    heatmap = new Heatmap(points.concat(extraHazardPoints), {
+                        radius: 20,
+                        dissipating: true,
+                        opacity: 0.8,
+                        intensityOfMidpoint: 0.2
+                    });
+                    heatmap.setMap(myMap);
+                    heatmapActive = true;
+                    updateHeatmapBtnUI();
+                    showToast('Тепловая карта', 'Отображение зон риска включено');
+                });
+            } else {
+                heatmapActive = !heatmapActive;
+                heatmap.setMap(heatmapActive ? myMap : null);
+                updateHeatmapBtnUI();
+                showToast('Тепловая карта', heatmapActive ? 'Отображение включено' : 'Отображение отключено');
+            }
+        }
+
+        function updateHeatmapBtnUI() {
+            const btn = document.getElementById('heatmapToggleBtn');
+            if (!btn) return;
+            if (heatmapActive) {
+                btn.className = "bg-orange-600 text-white px-3 py-1.5 rounded-xl shadow border border-orange-500 text-xs font-bold transition flex items-center gap-1.5";
+            } else {
+                btn.className = "bg-white/90 dark:bg-dark-card/90 hover:bg-orange-600 hover:text-white text-gray-800 dark:text-white backdrop-blur px-3 py-1.5 rounded-xl shadow border border-gray-200 dark:border-gray-700 text-xs font-bold transition flex items-center gap-1.5";
+            }
+        }
+
+        function exportData(format) {
+            if (format === 'pdf') {
+                window.print();
+                return;
+            }
+            const events = DataStore.getEvents();
+            let csv = "\uFEFFИД;Заголовок;Локация;Датчик;Критичность;Телеметрия;Прогноз;Статус\n";
+            events.forEach(e => {
+                csv += `"${e.id}";"${e.title}";"${e.location}";"${e.sensor}";"${e.severity}";"${e.telemetry||''}";"${e.forecast}";"${e.status}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `dispatcher_export_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+            showToast('Экспорт данных', 'Файл отчета успешно сгенерирован');
         }
 
         function renderMarkers() {
@@ -456,6 +585,57 @@
 
                 myMap.geoObjects.add(placemark);
             });
+        }
+
+        function renderAlertsList() {
+            const container = document.getElementById('alerts-container');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const allEvents = DataStore.getEvents();
+            const events = allEvents.filter(e => activeTabFilter === 'active' ? e.status === 'active' : e.status === 'resolved');
+
+            if (events.length === 0) {
+                container.innerHTML = `<div class="text-xs text-gray-400 py-8 text-center">Событий в категории нет</div>`;
+                return;
+            }
+
+            events.forEach(e => {
+                const card = document.createElement('div');
+                card.className = 'p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 space-y-1 cursor-pointer hover:border-blue-500 hover:shadow transition';
+                card.onclick = () => openProcessModal(e.id);
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold ${e.severity === 'critical' ? 'text-red-500' : 'text-orange-500'}">${e.severity.toUpperCase()}</span>
+                        <span class="text-gray-400 text-[10px]">${e.id}</span>
+                    </div>
+                    <div class="font-bold text-xs text-gray-900 dark:text-white">${e.location}</div>
+                    <div class="text-[11px] text-gray-500 dark:text-gray-400">${e.sensor}</div>
+                    <div class="text-[11px] text-gray-700 dark:text-gray-300 mt-1">Прогноз: ${e.forecast}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(tab) {
+            activeTabFilter = tab;
+            document.getElementById('tab-active').className = tab === 'active' ? 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm border-b-2 border-blue-500 text-blue-500 flex items-center justify-center gap-2' : 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm text-gray-400 flex items-center justify-center gap-2';
+            document.getElementById('tab-resolved').className = tab === 'resolved' ? 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm border-b-2 border-green-500 text-green-500 flex items-center justify-center gap-2' : 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm text-gray-400 flex items-center justify-center gap-2';
+            renderAlertsList();
+        }
+
+        function updateKPIs() {
+            const events = DataStore.getEvents();
+            const active = events.filter(e => e.status === 'active');
+            const critical = active.filter(e => e.severity === 'critical');
+            const warning = active.filter(e => e.severity === 'warning');
+            const resolved = events.filter(e => e.status === 'resolved');
+
+            document.getElementById('activeCount').textContent = active.length;
+            document.getElementById('criticalCount').textContent = critical.length;
+            document.getElementById('warningCount').textContent = warning.length;
+            document.getElementById('activeBadge').textContent = active.length;
+            document.getElementById('resolvedBadge').textContent = resolved.length;
         }
 
         function switchMainView(view) {
@@ -517,6 +697,11 @@
             if (!log) return;
             const time = new Date().toLocaleTimeString('ru-RU');
             const randomSensor = sensorCatalog[Math.floor(Math.random() * sensorCatalog.length)];
+            
+            if (randomSensor.severity === 'critical') {
+                SoundManager.playAlertSound();
+            }
+
             const entry = document.createElement('div');
             entry.innerHTML = `<span class="text-slate-500">[${time}]</span> <span class="text-blue-400">${randomSensor.id}</span> (${randomSensor.object}): Телеметрия -> <span class="text-white">${randomSensor.value}</span>`;
             log.prepend(entry);
@@ -528,67 +713,18 @@
         }
 
         function requestForecastUpdate() {
-            const btn = document.getElementById('updateForecastBtn');
             const spinner = document.getElementById('forecastSpinner');
             spinner.classList.add('animate-spin');
-            btn.disabled = true;
-
             setTimeout(() => {
                 spinner.classList.remove('animate-spin');
-                btn.disabled = false;
+                SoundManager.playAlertSound();
                 document.getElementById('forecastTime').textContent = new Date().toLocaleTimeString('ru-RU');
-                showToast('Прогноз ML обновлен', 'Модель пересчитала риски. Точность: 94.2%');
-            }, 1200);
+                showToast('ML Модель обновлена', 'Прогноз и карта рисков пересчитаны');
+            }, 1000);
         }
 
-        function switchTab(tab) {
-            activeTabFilter = tab;
-            document.getElementById('tab-active').className = tab === 'active' ? 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm border-b-2 border-blue-500 text-blue-500 flex items-center justify-center gap-2' : 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm text-gray-400 flex items-center justify-center gap-2';
-            document.getElementById('tab-resolved').className = tab === 'resolved' ? 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm border-b-2 border-green-500 text-green-500 flex items-center justify-center gap-2' : 'flex-1 px-4 py-2.5 font-medium text-xs sm:text-sm text-gray-400 flex items-center justify-center gap-2';
-            renderCards();
-        }
-
-        function renderCards() {
-            const container = document.getElementById('alerts-container');
-            container.innerHTML = '';
-            const allEvents = DataStore.getEvents();
-            const activeEvents = allEvents.filter(e => e.status === 'active');
-            const resolvedEvents = allEvents.filter(e => e.status === 'resolved');
-
-            document.getElementById('activeBadge').textContent = activeEvents.length;
-            document.getElementById('resolvedBadge').textContent = resolvedEvents.length;
-            document.getElementById('activeCount').textContent = activeEvents.length;
-            document.getElementById('criticalCount').textContent = activeEvents.filter(e => e.severity === 'critical').length;
-            document.getElementById('warningCount').textContent = activeEvents.filter(e => e.severity === 'warning').length;
-
-            const eventsToDisplay = activeTabFilter === 'active' ? activeEvents : resolvedEvents;
-
-            if (eventsToDisplay.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-8">Нет ${activeTabFilter === 'active' ? 'активных угроз' : 'завершенных инцидентов'}</div>`;
-                return;
-            }
-
-            eventsToDisplay.forEach(e => {
-                const card = document.createElement('div');
-                const isCritical = e.severity === 'critical';
-                card.className = `p-4 rounded-xl border-l-4 ${activeTabFilter === 'active' ? (isCritical ? 'bg-red-50 dark:bg-slate-800/80 border-red-500' : 'bg-orange-50 dark:bg-slate-800/80 border-orange-500') : 'bg-green-50 dark:bg-slate-800/80 border-green-500'} shadow space-y-2 cursor-pointer hover:shadow-md hover:scale-[1.01] transition`;
-                card.onclick = () => openProcessModal(e.id);
-                card.innerHTML = `
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="${isCritical ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400'} px-2 py-0.5 rounded font-bold uppercase text-[10px]">${isCritical ? 'КРИТИЧЕСКИЙ' : 'ПРЕДУПРЕЖДЕНИЕ'}</span>
-                        <span class="text-gray-500 dark:text-gray-400 font-mono text-[10px]">${e.id}</span>
-                    </div>
-                    <h4 class="font-bold text-sm text-gray-900 dark:text-white">${e.location}</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">${e.sensor}</p>
-                    <div class="text-xs text-gray-700 dark:text-gray-300 font-medium">Прогноз: ${e.forecast}</div>
-                    ${e.comment ? `<div class="text-[11px] text-green-600 dark:text-green-400 pt-1 border-t border-gray-200 dark:border-gray-700">✓ ${e.comment}</div>` : ''}
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function openProcessModal(id) { 
-            currentAlertId = id; 
+        function openProcessModal(id) {
+            currentAlertId = id;
             const events = DataStore.getEvents();
             const event = events.find(e => e.id === id);
             if (!event) return;
@@ -605,17 +741,18 @@
             if (event.severity === 'critical') {
                 badge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300";
                 badge.textContent = "КРИТИЧЕСКИЙ";
+                SoundManager.playAlertSound();
             } else {
                 badge.className = "px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300";
                 badge.textContent = "ПРЕДУПРЕЖДЕНИЕ";
             }
 
             document.getElementById('commentInput').value = event.comment || '';
-            document.getElementById('processModal').classList.remove('hidden'); 
+            document.getElementById('processModal').classList.remove('hidden');
         }
 
         function closeModal() { document.getElementById('processModal').classList.add('hidden'); }
-        
+
         function saveDecision() {
             const events = DataStore.getEvents();
             const event = events.find(e => e.id === currentAlertId);
@@ -627,19 +764,20 @@
                     'notify_mchs': 'Уведомление МЧС',
                     'false_alarm': 'Ложное срабатывание'
                 };
-                
+
                 event.status = 'resolved';
                 event.resolvedAt = new Date().toISOString();
                 event.actionType = selectedAction;
                 event.priority = document.getElementById('priorityInput').value;
                 event.executor = document.getElementById('executorInput').value;
                 event.comment = `[${actionLabels[selectedAction]}] ${document.getElementById('commentInput').value}`;
-                
+
                 DataStore.saveEvents(events);
                 closeModal();
-                renderCards();
                 renderMarkers();
-                showToast('Решение сохранено', 'Инцидент успешно обработан и перемещен в завершенные');
+                renderAlertsList();
+                updateKPIs();
+                showToast('Решение сохранено', 'Статус инцидента обновлен диспетчером');
             }
         }
 
@@ -651,54 +789,17 @@
             setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-        function initResizer() {
-            const resizer = document.getElementById('drag-handle');
-            const leftPanel = document.getElementById('left-panel');
-            const rightPanel = document.getElementById('right-panel');
-            if (!resizer || !leftPanel || !rightPanel) return;
-
-            let isResizing = false;
-
-            resizer.addEventListener('mousedown', () => {
-                isResizing = true;
-                resizer.classList.add('resizing');
-                document.body.style.cursor = 'col-resize';
-                document.body.style.userSelect = 'none';
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isResizing) return;
-                const container = resizer.parentElement;
-                if (!container) return;
-                const rect = container.getBoundingClientRect();
-                let leftWidth = ((e.clientX - rect.left) / rect.width) * 100;
-                if (leftWidth < 20) leftWidth = 20;
-                if (leftWidth > 80) leftWidth = 80;
-                leftPanel.style.width = `${leftWidth}%`;
-                rightPanel.style.width = `${100 - leftWidth}%`;
-                resizer.style.left = `${leftWidth}%`;
-                if (myMap) myMap.container.fitToViewport();
-            });
-
-            document.addEventListener('mouseup', () => {
-                if (isResizing) {
-                    isResizing = false;
-                    resizer.classList.remove('resizing');
-                    document.body.style.cursor = '';
-                    document.body.style.userSelect = '';
-                    if (myMap) myMap.container.fitToViewport();
-                }
-            });
-        }
-
         function logout() { localStorage.removeItem('ls_session'); window.location.href = 'index.html'; }
+
+        setInterval(() => {
+            const timeEl = document.getElementById('currentTime');
+            if (timeEl) timeEl.textContent = new Date().toLocaleTimeString('ru-RU');
+        }, 1000);
 
         window.onload = () => {
             ThemeManager.init();
+            SoundManager.init();
             initMap();
-            initResizer();
-            renderCards();
-            setInterval(() => document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('ru-RU'), 1000);
         };
     </script>
 </body>
