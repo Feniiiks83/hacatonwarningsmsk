@@ -21,7 +21,7 @@
         }
     </script>
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; }
         .tab-btn.active { background-color: #7C3AED; color: white; border-bottom: 2px solid #A78BFA; }
         .icon-sun, .icon-moon { display: none; }
         html.dark .icon-sun { display: block; }
@@ -179,18 +179,40 @@
                 });
             },
             setTheme(theme) {
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
                 localStorage.setItem('ls_theme', theme);
             }
         };
 
         const DataStore = {
             KEYS: { USERS: 'ls_users', EVENTS: 'ls_events', SESSION: 'ls_session', THEME: 'ls_theme' },
-            getEvents() { return JSON.parse(localStorage.getItem(this.KEYS.EVENTS) || '[]'); }
+            getEvents() {
+                const data = localStorage.getItem(this.KEYS.EVENTS);
+                if (!data) {
+                    const seed = [
+                        { id: 'e1', title: 'Превышение метана', location: 'Вентшахта №8, ул. Тверская', sensor: 'Газоанализатор CH4-G2', severity: 'critical', forecast: 'Высокая вероятность аварии', status: 'active', coords: [55.7601, 37.6062] },
+                        { id: 'e2', title: 'Уровень воды', location: 'Коллектор "Садовое кольцо", пикет 12', sensor: 'Датчик уровня воды LW-402', severity: 'critical', forecast: 'Превышение нормы', status: 'active', coords: [55.7480, 37.6250] },
+                        { id: 'e3', title: 'Открытие люка', location: 'проспект Мира, у д. 45', sensor: 'Контактный датчик СКУД M-15', severity: 'warning', forecast: 'Срабатывание СКУД', status: 'active', coords: [55.7820, 37.6330] },
+                        { id: 'e4', title: 'Температурный сдвиг', location: 'Коллектор "Яуза", сектор 4', sensor: 'Температурный сенсор T-12', severity: 'warning', forecast: 'Аномалия температуры', status: 'active', coords: [55.7550, 37.6500] }
+                    ];
+                    localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(seed));
+                    return seed;
+                }
+                return JSON.parse(data);
+            },
+            getUsers() {
+                const data = localStorage.getItem(this.KEYS.USERS);
+                if (!data) {
+                    const seedUsers = [
+                        { id: 1, fullName: 'Иванов А. Е.', login: 'dispatcher', role: 'dispatcher', active: true },
+                        { id: 2, fullName: 'Администратор Системы', login: 'admin', role: 'admin', active: true }
+                    ];
+                    localStorage.setItem(this.KEYS.USERS, JSON.stringify(seedUsers));
+                    return seedUsers;
+                }
+                return JSON.parse(data);
+            }
         };
 
         const sensorCatalogAdmin = [
@@ -254,7 +276,7 @@
             document.getElementById(`admin-view-${tab}`).classList.remove('hidden');
             
             if (tab === 'monitoring' && myMap) {
-                myMap.container.fitToViewport();
+                setTimeout(() => myMap.container.fitToViewport(), 100);
             }
             if (tab === 'sensors') renderAdminSensors();
             if (tab === 'users') renderUsers();
@@ -287,7 +309,7 @@
 
         function renderUsers() {
             const tbody = document.getElementById('usersTableBody');
-            const users = JSON.parse(localStorage.getItem('ls_users') || '[]');
+            const users = DataStore.getUsers();
             tbody.innerHTML = '';
             users.forEach(u => {
                 tbody.innerHTML += `
@@ -304,12 +326,12 @@
         function addUser() {
             const login = prompt('Введите логин нового сотрудника:');
             if (!login) return;
-            const users = JSON.parse(localStorage.getItem('ls_users') || '[]');
+            const users = DataStore.getUsers();
             if (users.some(u => u.login === login)) {
                 alert('Пользователь с таким логином уже существует!');
                 return;
             }
-            users.push({ id: Date.now(), fullName: 'Оператор Диспетчерской', login: login, password: '123', role: 'dispatcher', active: true });
+            users.push({ id: Date.now(), fullName: 'Оператор Диспетчерской', login: login, role: 'dispatcher', active: true });
             localStorage.setItem('ls_users', JSON.stringify(users));
             renderUsers();
         }
