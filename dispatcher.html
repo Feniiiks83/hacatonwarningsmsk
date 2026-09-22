@@ -3,292 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ситуационный центр | Диспетчер - АО «Москоллектор»</title>
+    <title>Диспетчерская система | АО «Москоллектор»</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=your-api-key&lang=ru_RU" type="text/javascript"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    colors: {
-                        'dark-bg': '#0f172a',
-                        'dark-card': '#1e293b',
-                        moscow: {
-                            blue: '#0066CC',
-                            dark: '#0f172a',
-                            card: '#1e293b',
-                            accent: '#00B4D8'
-                        }
-                    },
-                    animation: {
-                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'fade-in': 'fadeIn 0.3s ease-out'
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(-10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' }
-                        }
-                    }
+                    colors: { moscow: { blue: '#0066CC', dark: '#0f172a', card: '#1e293b', accent: '#00B4D8' } }
                 }
             }
         }
     </script>
     <style>
-        body { overflow: hidden; transition: background-color 0.3s ease, color 0.3s ease; }
-        
-        .resizer {
-            width: 5px;
-            cursor: col-resize;
-            background-color: transparent;
-            transition: background-color 0.2s;
-            z-index: 30;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-        }
-        .resizer:hover, .resizer.resizing {
-            background-color: #0066CC;
-        }
-        
-        #map-container {
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            flex: 1;
-            min-width: 300px;
-        }
-        
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1rem;
-            align-content: start;
-        }
-        
+        body { overflow-x: hidden; }
+        .resizer { width: 5px; cursor: col-resize; position: absolute; top:0; bottom:0; left:0; z-index:30; }
+        .resizer:hover, .resizer.resizing { background-color: #0066CC; }
+        #map-container { position: relative; width: 100%; height: 100%; min-height: 350px; }
         .icon-sun, .icon-moon { display: none; }
         html.dark .icon-sun { display: block; }
         html:not(.dark) .icon-moon { display: block; }
-        
-        .tab-btn.active {
-            background-color: #0066CC;
-            color: white;
-            border-bottom: 2px solid #00B4D8;
-        }
-        .dark .tab-btn.active {
-            background-color: #1e293b;
-        }
-        
+        .tab-btn.active { background-color: #0066CC; color: white; }
+        .dark .tab-btn.active { background-color: #1e293b; color: #00B4D8; border-bottom: 2px solid #00B4D8; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 h-screen flex flex-col">
 
-    <!-- Navbar -->
-    <nav class="h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 shrink-0 z-40 shadow-sm">
+    <!-- Top Navigation -->
+    <nav class="h-16 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 md:px-6 shrink-0 z-40">
         <div class="flex items-center gap-3">
             <svg class="w-8 h-8 text-moscow-blue dark:text-moscow-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
             <div>
-                <span class="font-bold text-lg block leading-tight">Ситуационный центр</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">Рабочее место диспетчера</span>
+                <span class="font-bold text-base md:text-lg block leading-tight">Ситуационный центр</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Диспетчерский пульт управления</span>
             </div>
-            <span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-2 font-medium">DISPATCHER</span>
         </div>
+
+        <!-- System Info & Actions -->
         <div class="flex items-center gap-3">
-            <div class="hidden md:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mr-4">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+            <button id="refreshForecastBtn" onclick="requestForecastUpdate()" class="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-moscow-blue dark:text-moscow-accent hover:bg-blue-100 text-xs md:text-sm font-semibold px-3 py-2 rounded-lg transition border border-blue-200 dark:border-blue-800">
+                <svg id="forecastSpinner" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                 </svg>
-                <span id="currentTime">--:--:--</span>
-            </div>
-            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="Переключить тему">
-                <svg class="icon-sun w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="5"/>
-                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                </svg>
-                <svg class="icon-moon w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
+                <span>Запросить обновление прогноза</span>
             </button>
-            <button id="logoutBtn" class="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
-                </svg>
-                Выход
+
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <svg class="icon-sun w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <svg class="icon-moon w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             </button>
+
+            <button id="logoutBtn" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg text-sm font-semibold transition">Выход</button>
         </div>
     </nav>
 
-    <!-- Content Area -->
-    <div class="flex-1 overflow-hidden relative flex">
-        <div id="left-panel" class="h-full relative bg-gray-200 dark:bg-gray-800" style="width: 60%;">
-            <div id="map-container" class="w-full h-full"></div>
-            
-            <!-- Map Overlay -->
-            <div class="absolute top-4 left-4 bg-white/95 dark:bg-dark-card/95 backdrop-blur p-4 rounded-xl shadow-xl z-10 max-w-xs border border-gray-200 dark:border-gray-700">
-                <h4 class="font-bold text-sm mb-2 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                    </svg>
-                    Мониторинг сети
-                </h4>
-                <div class="space-y-1 text-xs">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <span class="text-red-600 dark:text-red-400 font-bold"><span id="criticalCount">0</span> критических</span>
+    <!-- Operational Dashboard Bar -->
+    <div class="bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-2.5 shrink-0 text-xs md:text-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span>
+                <span class="font-medium">Статус: <strong class="text-green-600 dark:text-green-400">Штатный</strong></span>
+            </div>
+            <div class="text-gray-500 dark:text-gray-400">
+                Обновление данных: <span id="lastUpdate" class="font-mono text-gray-900 dark:text-gray-100 font-bold">--:--:--</span>
+            </div>
+            <div class="text-gray-500 dark:text-gray-400 hidden lg:block">
+                Точность ML: <strong class="text-moscow-blue dark:text-moscow-accent">94% Precision / 91% Recall</strong>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-gray-500 dark:text-gray-400">Горизонт прогноза: <strong>24 часа</strong></span>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-4 shrink-0 overflow-x-auto">
+        <button onclick="switchMainTab('map')" id="main-tab-map" class="tab-btn active px-4 py-3 text-xs md:text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap">
+            Карта и угрозы
+        </button>
+        <button onclick="switchMainTab('sensors')" id="main-tab-sensors" class="tab-btn px-4 py-3 text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400 transition flex items-center gap-2 whitespace-nowrap">
+            Датчики и объекты (<span id="sensorsCount">0</span>)
+        </button>
+        <button onclick="switchMainTab('stream')" id="main-tab-stream" class="tab-btn px-4 py-3 text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400 transition flex items-center gap-2 whitespace-nowrap">
+            Лента событий (Real-time) <span class="w-2 h-2 rounded-full bg-red-500"></span>
+        </button>
+    </div>
+
+    <!-- MAIN VIEW AREA -->
+    <div class="flex-1 overflow-hidden relative">
+        
+        <!-- VIEW 1: MAP & INCIDENTS -->
+        <div id="view-map" class="h-full flex flex-col md:flex-row relative">
+            <!-- Left Map Panel -->
+            <div id="left-panel" class="w-full md:w-[60%] h-[50vh] md:h-full relative bg-gray-200 dark:bg-gray-800">
+                <div id="map-container"></div>
+                
+                <!-- Filter Floating Button -->
+                <div class="absolute top-4 right-4 z-20">
+                    <button onclick="toggleFilterModal()" class="bg-white dark:bg-dark-card border border-gray-200 dark:border-gray-700 shadow-xl px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        <svg class="w-4 h-4 text-moscow-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        Фильтры угроз
+                    </button>
+                </div>
+            </div>
+
+            <div id="drag-handle" class="resizer hidden md:block" style="left: 60%;"></div>
+
+            <!-- Right Incidents Panel -->
+            <div id="right-panel" class="w-full md:w-[40%] h-[50vh] md:h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-gray-700 flex flex-col">
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700 font-bold text-xs uppercase text-gray-500">
+                    Активные инциденты и предупреждения
+                </div>
+                <div id="alerts-container" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: SENSORS & OBJECTS REGISTRY -->
+        <div id="view-sensors" class="h-full hidden overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-dark-bg">
+            <div class="max-w-7xl mx-auto space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 class="text-xl font-bold">Общий реестр датчиков и инженерных объектов</h2>
+                    <input type="text" id="sensorSearchInput" oninput="renderSensorsTable()" placeholder="Поиск по названию, коду или адресу..." class="w-full sm:w-80 px-4 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-card focus:outline-none">
+                </div>
+
+                <div class="bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-sm">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase">
+                            <tr>
+                                <th class="p-3.5">Датчик / Код</th>
+                                <th class="p-3.5">Объект / Локация</th>
+                                <th class="p-3.5">Тип</th>
+                                <th class="p-3.5">Текущее значение</th>
+                                <th class="p-3.5">Статус</th>
+                                <th class="p-3.5 text-right">Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sensorsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: REAL-TIME EVENTS STREAM -->
+        <div id="view-stream" class="h-full hidden overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-dark-bg">
+            <div class="max-w-7xl mx-auto space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold">Лента событий датчиков в реальном времени</h2>
+                        <p class="text-xs text-gray-500">Поток входящих измерений и сигналов телеметрии</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
-                        <span class="text-orange-600 dark:text-orange-400 font-bold"><span id="warningCount">0</span> предупреждений</span>
+                    <span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-3 py-1 rounded-full font-semibold animate-pulse">
+                        ● LIVE STREAM
+                    </span>
+                </div>
+
+                <div class="bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                    <div class="max-h-[70vh] overflow-y-auto p-4 space-y-2 font-mono text-xs" id="streamLogContainer">
+                        <!-- Live log rows inserted here -->
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div id="drag-handle" class="resizer" style="left: 60%;"></div>
-        
-        <div id="right-panel" class="h-full bg-white dark:bg-dark-card border-l border-gray-200 dark:border-gray-700 flex flex-col min-w-[320px]" style="width: 40%;">
-            <div class="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
-                <input type="text" id="searchInput" oninput="renderCards()" placeholder="Поиск по датчику или адресу..." class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-moscow-blue">
+
+    </div>
+
+    <!-- FILTER MODAL DROPDOWN -->
+    <div id="filterModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card max-w-md w-full rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-3">
+                <h3 class="font-bold text-lg">Расширенный фильтр угроз</h3>
+                <button onclick="toggleFilterModal()" class="text-gray-400 hover:text-gray-600">✕</button>
             </div>
 
-            <div class="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                <button onclick="switchAlertTab('active')" id="alert-tab-active" class="tab-btn active flex-1 px-4 py-3 font-medium text-sm transition">
-                    Активные <span id="activeBadge" class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1">0</span>
-                </button>
-                <button onclick="switchAlertTab('resolved')" id="alert-tab-resolved" class="tab-btn flex-1 px-4 py-3 font-medium text-sm text-gray-500 dark:text-gray-400 transition">
-                    Завершенные <span id="resolvedBadge" class="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1">0</span>
-                </button>
-            </div>
-
-            <div id="alerts-container" class="flex-1 overflow-y-auto p-4 cards-grid"></div>
-            
-            <div id="empty-state" class="hidden flex-1 flex items-center justify-center p-8">
-                <div class="text-center text-gray-400 dark:text-gray-500">
-                    <svg class="w-16 h-16 mx-auto mb-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    <p class="text-lg font-medium">События не найдены</p>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block font-semibold mb-1">Тип угрозы</label>
+                    <select id="filterType" class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <option value="all">Все типы</option>
+                        <option value="flood">Подтопление (уровень воды)</option>
+                        <option value="fire">Задымление / Газ (CH4, H2S)</option>
+                        <option value="access">СКУД / Вскрытие люков</option>
+                        <option value="sensor_fail">Отказ оборудования</option>
+                    </select>
                 </div>
+
+                <div>
+                    <label class="block font-semibold mb-1">Уровень опасности</label>
+                    <select id="filterSeverity" class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <option value="all">Все уровни</option>
+                        <option value="critical">Критический</option>
+                        <option value="warning">Предупреждение</option>
+                        <option value="normal">Норма</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-3">
+                <button onclick="resetFilters()" class="flex-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 font-semibold text-xs">Сбросить</button>
+                <button onclick="applyFilters()" class="flex-1 py-2.5 rounded-xl bg-moscow-blue text-white font-semibold text-xs shadow-lg shadow-blue-500/30">Применить</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Process Alert -->
-    <div id="processModal" onclick="handleModalBackdropClick(event)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-dark-card w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in" onclick="event.stopPropagation()">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
-                <h3 class="text-xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    Реагирование на инцидент
-                </h3>
-                <p id="modalLocation" class="text-sm text-gray-600 dark:text-gray-400 mt-2 pl-8">Локация...</p>
-            </div>
-            <div class="p-6 overflow-y-auto">
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold mb-3">Принимаемое решение</label>
-                    <div class="space-y-2">
-                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="brigade" class="w-5 h-5 text-moscow-blue mt-0.5" checked>
-                            <div class="ml-3">
-                                <span class="block text-sm font-medium">Отправить аварийную бригаду</span>
-                                <span class="block text-xs text-gray-500">Экстренный выезд на объект</span>
-                            </div>
-                        </label>
-                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="specialist" class="w-5 h-5 text-moscow-blue mt-0.5">
-                            <div class="ml-3">
-                                <span class="block text-sm font-medium">Запросить диагноста</span>
-                                <span class="block text-xs text-gray-500">Проверка датчиков и линий связи</span>
-                            </div>
-                        </label>
-                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="monitor" class="w-5 h-5 text-moscow-blue mt-0.5">
-                            <div class="ml-3">
-                                <span class="block text-sm font-medium">Взять на усиленный контроль</span>
-                                <span class="block text-xs text-gray-500">Отслеживание динамики параметров</span>
-                            </div>
-                        </label>
-                        <label class="flex items-start p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <input type="radio" name="action" value="false_alarm" class="w-5 h-5 text-moscow-blue mt-0.5">
-                            <div class="ml-3">
-                                <span class="block text-sm font-medium">Ложная тревога</span>
-                                <span class="block text-xs text-gray-500">Сбой при передаче телеметрии</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-                <textarea id="commentInput" rows="3" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-moscow-blue resize-none text-sm" placeholder="Введите примечание или номер наряда..."></textarea>
-            </div>
-            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-5 py-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">Отмена</button>
-                <button id="saveDecisionBtn" class="px-6 py-2.5 rounded-lg bg-moscow-blue hover:bg-blue-700 text-white font-medium transition">Подтвердить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-6 right-6 bg-white dark:bg-dark-card border-l-4 border-green-500 rounded-lg shadow-2xl p-4 z-[110] hidden animate-fade-in max-w-md">
-        <div class="flex items-start gap-3">
-            <svg class="w-6 h-6 text-green-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            <div>
-                <h4 class="font-bold text-gray-900 dark:text-gray-100">Статус обновлен</h4>
-                <p id="toastMessage" class="text-sm text-gray-600 dark:text-gray-400 mt-1"></p>
-            </div>
-        </div>
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-white dark:bg-dark-card border-l-4 border-green-500 rounded-xl shadow-2xl p-4 z-[110] hidden max-w-sm">
+        <h4 class="font-bold text-sm" id="toastTitle">Уведомление</h4>
+        <p class="text-xs text-gray-500 mt-0.5" id="toastMessage">Операция успешно выполнена</p>
     </div>
 
     <script>
         const DataStore = {
             KEYS: { USERS: 'ls_users', EVENTS: 'ls_events', SESSION: 'ls_session', THEME: 'ls_theme' },
-
             getEvents() { return JSON.parse(localStorage.getItem(this.KEYS.EVENTS) || '[]'); },
-
-            resolveEvent(eventId, userId, resolution) {
-                const events = this.getEvents();
-                const event = events.find(e => e.id === eventId);
-                if (event) {
-                    event.status = 'resolved';
-                    event.resolvedAt = new Date().toISOString();
-                    event.resolvedBy = userId;
-                    event.resolution = resolution;
-                    localStorage.setItem(this.KEYS.EVENTS, JSON.stringify(events));
-                    return true;
-                }
-                return false;
-            },
-
             getSession() { return JSON.parse(localStorage.getItem(this.KEYS.SESSION) || 'null'); },
             logout() { localStorage.removeItem(this.KEYS.SESSION); },
             getTheme() { return localStorage.getItem(this.KEYS.THEME) || 'dark'; },
-            setTheme(theme) { localStorage.setItem(this.KEYS.THEME, theme); }
+            setTheme(t) { localStorage.setItem(this.KEYS.THEME, t); }
         };
 
         const session = DataStore.getSession();
-        if (!session || (session.role !== 'dispatcher' && session.role !== 'admin')) {
-            window.location.href = 'index.html';
-        }
+        if (!session) window.location.href = 'index.html';
 
         const html = document.documentElement;
+        function applyTheme(t) { t === 'light' ? html.classList.remove('dark') : html.classList.add('dark'); }
         applyTheme(DataStore.getTheme());
-
-        function applyTheme(theme) {
-            if (theme === 'light') html.classList.remove('dark');
-            else html.classList.add('dark');
-        }
 
         document.getElementById('themeToggle').addEventListener('click', () => {
             const newTheme = html.classList.contains('dark') ? 'light' : 'dark';
@@ -302,207 +245,164 @@
         });
 
         function updateTime() {
-            const timeEl = document.getElementById('currentTime');
-            if (timeEl) timeEl.textContent = new Date().toLocaleTimeString('ru-RU');
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ru-RU');
         }
-        updateTime();
         setInterval(updateTime, 1000);
+        updateTime();
 
-        let myMap = null;
-        let currentAlertId = null;
-        let alertTab = 'active';
+        // Forecast update request feature
+        function requestForecastUpdate() {
+            const btn = document.getElementById('refreshForecastBtn');
+            const spinner = document.getElementById('forecastSpinner');
+            spinner.classList.add('animate-spin');
+            btn.disabled = true;
 
-        function initMap() {
-            if (typeof ymaps === 'undefined') {
-                const mapBox = document.getElementById('map-container');
-                if (mapBox) {
-                    mapBox.innerHTML = `
-                        <div class="flex flex-col items-center justify-center h-full p-6 text-center text-gray-500">
-                            <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.053-1.764l5-2.5a2 2 0 011.894 0l5.5 2.75 5.5-2.75A2 2 0 0121 3.618v9.764a2 2 0 01-1.053 1.764l-5 2.5a2 2 0 01-1.894 0L9 20z"/></svg>
-                            <p class="font-semibold text-lg">Карта недоступна в автономном режиме</p>
-                            <p class="text-sm">Используйте список событий справа</p>
-                        </div>`;
-                }
-                return;
-            }
-            ymaps.ready(() => {
-                myMap = new ymaps.Map("map-container", {
-                    center: [55.751244, 37.618423],
-                    zoom: 11,
-                    controls: ['zoomControl', 'fullscreenControl']
-                });
-                myMap.container.fitToViewport();
-                renderMarkers();
-            });
+            setTimeout(() => {
+                spinner.classList.remove('animate-spin');
+                btn.disabled = false;
+                showToast('ML-прогноз обновлен', 'Машинная модель провела перерасчет рисков на ближайшие 24 часа.');
+                updateTime();
+            }, 1200);
         }
 
-        function renderMarkers() {
-            if (!myMap) return;
-            myMap.geoObjects.removeAll();
-            const events = DataStore.getEvents();
-            events.forEach(event => {
-                if (event.status === 'resolved') return;
-                let color = event.severity === 'critical' ? 'red' : (event.severity === 'warning' ? 'orange' : 'green');
-                const placemark = new ymaps.Placemark(event.coords, {
-                    balloonContentHeader: `<strong>${event.title}</strong>`,
-                    balloonContentBody: `<p><strong>Датчик:</strong> ${event.sensor}</p><p><strong>Вероятность:</strong> ${event.probability}%</p><button onclick="window.openModalFromMap(${event.id})" style="margin-top:8px;background:#0066CC;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Принять решение</button>`,
-                    balloonContentFooter: event.location
-                }, { preset: `islands#${color}DotIcon` });
-                myMap.geoObjects.add(placemark);
-            });
+        function showToast(title, msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3500);
         }
 
-        window.switchAlertTab = (tab) => {
-            alertTab = tab;
-            document.getElementById('alert-tab-active').classList.toggle('active', tab === 'active');
-            document.getElementById('alert-tab-resolved').classList.toggle('active', tab === 'resolved');
+        // Tab Switching Logic
+        function switchMainTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`main-tab-${tab}`).classList.add('active');
+            
+            document.getElementById('view-map').classList.add('hidden');
+            document.getElementById('view-sensors').classList.add('hidden');
+            document.getElementById('view-stream').classList.add('hidden');
+
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            if(tab === 'sensors') renderSensorsTable();
+        }
+
+        // Filters Modal Logic
+        function toggleFilterModal() {
+            document.getElementById('filterModal').classList.toggle('hidden');
+        }
+
+        function applyFilters() {
+            toggleFilterModal();
             renderCards();
-        };
+            showToast('Фильтры применены', 'Список инцидентов отфильтрован.');
+        }
 
+        function resetFilters() {
+            document.getElementById('filterType').value = 'all';
+            document.getElementById('filterSeverity').value = 'all';
+            applyFilters();
+        }
+
+        // Render Incidents Cards
         function renderCards() {
             const container = document.getElementById('alerts-container');
-            const emptyState = document.getElementById('empty-state');
-            const query = (document.getElementById('searchInput').value || '').toLowerCase();
             container.innerHTML = '';
-            
             const events = DataStore.getEvents();
-            let filtered = alertTab === 'active' ? events.filter(e => e.status === 'active') : events.filter(e => e.status === 'resolved');
+            
+            const fType = document.getElementById('filterType').value;
+            const fSev = document.getElementById('filterSeverity').value;
 
-            if (query) {
-                filtered = filtered.filter(e => 
-                    e.title.toLowerCase().includes(query) || 
-                    e.location.toLowerCase().includes(query) || 
-                    e.sensor.toLowerCase().includes(query)
-                );
-            }
+            const filtered = events.filter(e => {
+                if (fType !== 'all' && e.type !== fType) return false;
+                if (fSev !== 'all' && e.severity !== fSev) return false;
+                return true;
+            });
 
-            document.getElementById('activeBadge').textContent = events.filter(e => e.status === 'active').length;
-            document.getElementById('resolvedBadge').textContent = events.filter(e => e.status === 'resolved').length;
-            document.getElementById('criticalCount').textContent = events.filter(e => e.status === 'active' && e.severity === 'critical').length;
-            document.getElementById('warningCount').textContent = events.filter(e => e.status === 'active' && e.severity === 'warning').length;
-
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-                container.classList.add('hidden');
-                return;
-            }
-            emptyState.classList.add('hidden');
-            container.classList.remove('hidden');
-
-            filtered.forEach(event => {
-                const isCritical = event.severity === 'critical';
-                const borderColor = isCritical ? 'border-l-red-500' : 'border-l-orange-500';
+            filtered.forEach(e => {
                 const card = document.createElement('div');
-                card.className = `p-5 rounded-xl border-l-4 shadow-sm bg-white dark:bg-dark-card border-gray-200 dark:border-gray-700 ${borderColor} cursor-pointer hover:shadow-md transition`;
-                card.onclick = () => openModal(event.id);
+                card.className = "p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-2 shadow-sm";
                 card.innerHTML = `
-                    <div class="flex justify-between mb-2">
-                        <span class="text-xs font-bold uppercase ${isCritical ? 'text-red-500' : 'text-orange-500'}">${event.title}</span>
-                        <span class="text-xs text-gray-400">${event.status === 'resolved' ? 'Завершено' : event.forecast}</span>
+                    <div class="flex justify-between items-start text-xs">
+                        <span class="font-bold uppercase ${e.severity === 'critical' ? 'text-red-500' : 'text-orange-500'}">${e.severity}</span>
+                        <span class="text-gray-400">${e.forecast !== '-' ? 'Прогноз: ' + e.forecast : ''}</span>
                     </div>
-                    <h4 class="font-bold text-lg mb-1">${event.location}</h4>
-                    <p class="text-sm text-gray-500 mb-3">${event.sensor}</p>
-                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <span class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Вероятность: <strong>${event.probability}%</strong></span>
-                        ${event.status === 'active' ? '<button class="text-moscow-blue text-sm font-medium">Реагировать →</button>' : '<span class="text-xs text-green-500">✓ Выполнено</span>'}
-                    </div>
+                    <h4 class="font-bold text-sm">${e.location}</h4>
+                    <p class="text-xs text-gray-500">${e.sensor} — ${e.description}</p>
+                    <div class="text-xs pt-2 font-medium text-moscow-blue dark:text-moscow-accent">Вероятность: ${e.probability}%</div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        window.openModal = (id) => {
-            currentAlertId = id;
-            const event = DataStore.getEvents().find(e => e.id === id);
-            if (event) {
-                document.getElementById('modalLocation').textContent = `${event.title} — ${event.location}`;
-                document.getElementById('processModal').classList.remove('hidden');
-            }
-        };
-        window.openModalFromMap = (id) => openModal(id);
-        window.closeModal = () => {
-            document.getElementById('processModal').classList.add('hidden');
-            currentAlertId = null;
-            document.getElementById('commentInput').value = '';
-        };
+        // Sensors Registry Table
+        const sensorsList = [
+            { id: 'LW-402', name: 'Датчик уровня воды', object: 'Коллектор "Садовое кольцо"', type: 'Подтопление', val: '1.42 м', status: 'Критично' },
+            { id: 'CH4-G2', name: 'Газоанализатор CH4', object: 'Вентшахта №8, Тверская', type: 'Задымление/Газ', val: '4.8 %', status: 'Критично' },
+            { id: 'M-15', name: 'Контактный датчик СКУД', object: 'проспект Мира, д. 45', type: 'СКУД', val: 'Открыт', status: 'Предупреждение' },
+            { id: 'T-12', name: 'Температурный сенсор', object: 'Коллектор "Яуза"', type: 'Температура', val: 'N/A', status: 'Офлайн' },
+            { id: 'P-90', name: 'Датчик давления', object: 'Коллектор "Центральный"', type: 'Давление', val: '2.1 бар', status: 'Норма' }
+        ];
 
-        window.handleModalBackdropClick = (e) => {
-            if (e.target.id === 'processModal') closeModal();
-        };
+        function renderSensorsTable() {
+            document.getElementById('sensorsCount').textContent = sensorsList.length;
+            const tbody = document.getElementById('sensorsTableBody');
+            const search = document.getElementById('sensorSearchInput')?.value.toLowerCase() || '';
+            tbody.innerHTML = '';
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
-        });
-
-        document.getElementById('saveDecisionBtn').addEventListener('click', () => {
-            if (!currentAlertId) return;
-            const checkedRadio = document.querySelector('input[name="action"]:checked');
-            const action = checkedRadio ? checkedRadio.value : 'monitor';
-            const comment = document.getElementById('commentInput').value.trim();
-            const resolution = { action, comment };
-            if (DataStore.resolveEvent(currentAlertId, session ? session.login : 'dispatcher', resolution)) {
-                closeModal();
-                renderCards();
-                renderMarkers();
-                showToast('Решение зафиксировано в журнале');
-            }
-        });
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMessage').textContent = message;
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
+            sensorsList.filter(s => s.name.toLowerCase().includes(search) || s.object.toLowerCase().includes(search) || s.id.toLowerCase().includes(search)).forEach(s => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/50";
+                tr.innerHTML = `
+                    <td class="p-3.5 font-bold">${s.id}<div class="text-xs font-normal text-gray-400">${s.name}</div></td>
+                    <td class="p-3.5">${s.object}</td>
+                    <td class="p-3.5 text-xs">${s.type}</td>
+                    <td class="p-3.5 font-mono font-semibold">${s.val}</td>
+                    <td class="p-3.5 text-xs font-bold">${s.status}</td>
+                    <td class="p-3.5 text-right"><button onclick="switchMainTab('map')" class="text-xs text-moscow-blue hover:underline">На карте</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        // Resizable Split Panel
-        const leftPanel = document.getElementById('left-panel');
-        const rightPanel = document.getElementById('right-panel');
-        const resizer = document.getElementById('drag-handle');
-        let isResizing = false;
+        // Real-time Event Stream Simulator
+        function startEventStream() {
+            const container = document.getElementById('streamLogContainer');
+            const logEntries = [
+                "PING -> LW-402: Уровень воды 1.42м [Внимание]",
+                "PING -> P-90: Давление в норме 2.1 бар",
+                "PING -> CH4-G2: Газоанализатор CH4 = 0.02%",
+                "TELEMETRY -> СКУД M-15: Статус закрыт",
+                "ML_ENGINE -> Перерасчет вероятностей завершен"
+            ];
 
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            resizer.classList.add('resizing');
-            document.body.style.userSelect = 'none';
-            if (myMap) myMap.behaviors.disable('drag');
-            e.preventDefault();
-        });
+            setInterval(() => {
+                const randLog = logEntries[Math.floor(Math.random() * logEntries.length)];
+                const row = document.createElement('div');
+                row.className = "p-2 rounded bg-gray-50 dark:bg-gray-800 border-l-2 border-moscow-blue flex justify-between";
+                row.innerHTML = `<span>[${new Date().toLocaleTimeString()}] ${randLog}</span><span class="text-gray-400">OK</span>`;
+                container.prepend(row);
+                if(container.children.length > 30) container.removeChild(container.lastChild);
+            }, 3000);
+        }
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const w = ((document.body.clientWidth - e.clientX) / document.body.clientWidth) * 100;
-            if (w >= 20 && w <= 70) {
-                rightPanel.style.width = `${w}%`;
-                leftPanel.style.width = `${100 - w}%`;
-                resizer.style.left = `${100 - w}%`;
-                if (myMap) myMap.container.fitToViewport();
-            }
-        });
+        // Yandex Map Init
+        let myMap = null;
+        function initMap() {
+            ymaps.ready(() => {
+                myMap = new ymaps.Map("map-container", { center: [55.751244, 37.618423], zoom: 11 });
+                const events = DataStore.getEvents();
+                events.forEach(e => {
+                    const placemark = new ymaps.Placemark(e.coords, { balloonContent: e.title }, { preset: 'islands#redDotIcon' });
+                    myMap.geoObjects.add(placemark);
+                });
+            });
+        }
 
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                resizer.classList.remove('resizing');
-                document.body.style.userSelect = '';
-                if (myMap) myMap.behaviors.enable('drag');
-                if (myMap) myMap.container.fitToViewport();
-            }
-        });
-
-        window.addEventListener('load', () => {
+        window.onload = () => {
             initMap();
             renderCards();
-        });
-
-        window.addEventListener('resize', () => {
-            if (myMap) myMap.container.fitToViewport();
-        });
-
-        window.addEventListener('storage', () => {
-            renderCards();
-            renderMarkers();
-        });
+            startEventStream();
+        };
     </script>
 </body>
 </html>
